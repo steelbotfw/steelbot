@@ -1,0 +1,1 @@
+CREATE TABLE @users (user int , access int , registered int );
