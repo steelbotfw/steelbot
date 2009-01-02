@@ -12,26 +12,35 @@
  *
  */
 
-define('EVENT_CONNECTED',    0x001);
-define('EVENT_MSG_RECIEVED', 0x002);
-define('EVENT_MSG_SENT',     0x004);
-define('EVENT_DISCONNECTED', 0x006);
-define('EVENT_EXIT',         0x007);
-define('EVENT_RECONNECT',    0x008);
-define('EVENT_PLUGIN_LOADED',0x009);
-
-
 class SteelBotCore {
 
 static $next_timer,
        $timers,
        $events = array(),
-       $plugins,
-       $objects,
-       $content,
-       $sender,
+       $plugins = array(),
        $cfg;    
 
+// event functions
+static function RegisterEventHandler($event_type, $func) {    
+    self::$events[$event_type][] = $func;
+}
+
+static function EventRun(Event $event) {
+    $code = $event->GetCode();
+    if (array_key_exists($code, self::$events)) {
+        foreach (self::$events[$code] as $func) {
+            call_user_func($func, $event);
+        }
+    }
+    return $event;
+}
+
+
+
+// plugin functions
+static function PluginLoaded($plugin) {
+    return array_key_exists($plugin, self::$plugins);
+}
 
 /**
  * @desc Проверяет, зарегистрирована ли указанная пользовательская команда
@@ -42,6 +51,9 @@ static $next_timer,
 static function CommandExists($command) {
     return array_key_exists($command, self::$cmdlist);
 }
+
+
+// timer functions
 
 /**
  * @desc Записывает вызов заданной через заданное время
@@ -58,13 +70,6 @@ static function TimerAdd($time,$func) {
     return true;
 }
 
-static function AddObject($object) {
-    return self::$objects[] = $object;
-}
-
-static function PluginLoaded($plugin) {
-    return array_key_exists($plugin, self::$plugins);
-}
 
 /**
  * @desc Вызывает все функции, время вызова которых меньше чем заданное (т.е.
@@ -85,6 +90,7 @@ static function TimerRun($time) {
     }   
 }
 
+
 static function SyncTimers() {
     foreach (self::$timers as $k=>$v) {
         if (count($v) < 1) {
@@ -94,17 +100,6 @@ static function SyncTimers() {
     self::$next_timer = min(array_keys(self::$timers));    
 }
 
-static function RegisterEventHandler($event_type, $func) {    
-    self::$events[$event_type][] = $func;
-}
-
-static function EventRun($event_type) {
-    if (array_key_exists($event_type, self::$events)) {
-        foreach (self::$events[$event_type] as $func) {
-            call_user_func($func);
-        }
-    }
-}
 
 /**
  * @desc Последовательно вызывает все выходные функции, а затем завершает работу
@@ -112,7 +107,7 @@ static function EventRun($event_type) {
  *
  */
 static function DoExit() {    
-    self::EventRun(EVENT_EXIT);
+    self::EventRun( new Event(EVENT_EXIT) );
     exit;
 }
 

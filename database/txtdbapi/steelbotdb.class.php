@@ -26,7 +26,7 @@ class SteelBotDB implements ISteelBotDB  {
         
         $this->dbhandle = new Database("steelbot");
         if (!is_object($this->dbhandle)) {
-            echo "error connecting to db\n";
+            throw new db_exception("error connecting to db") ;
             return;
         } else {
             $this->connected = true;  
@@ -90,7 +90,6 @@ class SteelBotDB implements ISteelBotDB  {
         $user = (int)$user;
         
         $query_select = "SELECT user FROM ".$this->table_prefix."data WHERE user=$user AND dkey='$key'";
-        echo $query_select."\n";
         
         $time = time();
         $r = $this->Query($query_select);
@@ -176,6 +175,12 @@ class SteelBotDB implements ISteelBotDB  {
         } else {
             return $result->getValues();
         }
+    }
+    
+    public function GetTableNames() {
+        return array( 'user' => $this->table_prefix.'users',
+                      'data' => $this->table_prefix.'data'
+        );
     }
     
     public static function EscapeString($str) {

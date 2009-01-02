@@ -6,9 +6,9 @@
  * http://steelbot.net
  * 
  * @author N3x^0r
- * @version 1.0
+ * @version 1.1
  * 
- * 2008-08-07
+ * 2008-12-03
  *
  */
 
@@ -18,7 +18,7 @@ function plg_md5($val) {
        SteelBot::CmdHelp("md5");
        return; 
     }
-	Proto::Msg(md5($val));
+	SteelBot::Msg(md5($val));
 }
 
   
@@ -27,7 +27,7 @@ function plg_ip2host($params) {
        SteelBot::CmdHelp("ip2host");
        return; 
     }
-	 Proto::Msg(gethostbyaddr($params));
+	 SteelBot::Msg(gethostbyaddr($params));
 }	   
    
 function plg_host2ip($host) {
@@ -35,7 +35,7 @@ function plg_host2ip($host) {
        SteelBot::CmdHelp("host2ip");
        return; 
      }
-	 Proto::Msg(gethostbyname($host));   
+	 SteelBot::Msg(gethostbyname($host));   
 }
 	 
 function plg_url_enc($val) {    
@@ -43,7 +43,7 @@ function plg_url_enc($val) {
        SteelBot::CmdHelp("url_enc");
        return; 
     }
-	Proto::Msg("encoded URL = ".urlencode($val)); 
+	SteelBot::Msg("encoded URL = ".urlencode($val)); 
 }	 
 
 function plg_url_dec($val) {
@@ -51,8 +51,10 @@ function plg_url_dec($val) {
        SteelBot::CmdHelp("url_dec");
        return; 
     }
-	 Proto::Msg("decoded URL = ".urldecode($val)); 
+	 SteelBot::Msg("decoded URL = ".urldecode($val)); 
 }	 
+
+SteelBot::ExportInfo('default', 1,1, 'Nexor');
 
 SteelBot::RegisterCmd("md5",     "plg_md5",        1,"md5 <string> - вычислить md5 хеш строки");
 SteelBot::RegisterCmd("ip2host", "plg_ip2host",    1,"ip2host <ip> - узнать имя хоста по ip-адресу");

@@ -20,13 +20,20 @@ class SteelBotLng {
             throw new Exception('Error opening language file: '.$file,0);
         }
         
+        $this->ImportDict($lang_name, $lang);
+        unset($lang);
+        
+    }
+    
+    public function ResetDict($lang_name) {
+        $this->languages[$lang_name] = array();
+    }
+    
+    public function ImportDict($lang_name, $dict) {
         if (!array_key_exists($lang_name, $this->languages)) {
             $this->languages[ $lang_name ] = array();
         }
-        
-        $this->languages[$lang_name] = $this->languages[$lang_name] + $lang;
-        unset($lang);
-        
+        $this->languages[$lang_name] = $this->languages[$lang_name] + $dict;
     }
     
     public function GetTranslate($key, $lang =false ) {

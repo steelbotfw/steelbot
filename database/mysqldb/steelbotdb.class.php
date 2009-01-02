@@ -35,7 +35,7 @@ class SteelBotDB implements ISteelBotDB  {
         
         try {
             $this->Connect();
-        } catch (MySQL_exception $e) {
+        } catch (db_exception $e) {
             echo 'Mysql error: '.$e->getMessage()."\n";
         }
         
@@ -45,15 +45,13 @@ class SteelBotDB implements ISteelBotDB  {
         if ($this->connected) {
             return true;
         }
-        
         $this->dbhandle = mysql_connect($this->host, $this->username, $this->password);
         if (!$this->dbhandle) {
-            throw new MySQL_Exception(mysql_error(), mysql_errno());
+            throw new db_Exception(mysql_error(), mysql_errno());
         }
         
         if ( mysql_select_db($this->dbname, $this->dbhandle) ) {
           $this->connected = true; 
-          
           $table_users = file_get_contents(dirname(__FILE__).'/steelbot_users.sql');
           
           if ($table_users) {
@@ -69,7 +67,7 @@ class SteelBotDB implements ISteelBotDB  {
           return true;
           
         } else {
-             throw new MySQL_exception( mysql_error(), mysql_errno() );
+             throw new db_exception( mysql_error(), mysql_errno() );
         }
     }
     
@@ -168,7 +166,7 @@ class SteelBotDB implements ISteelBotDB  {
             $this->connected = false;
             try {
                 $this->Connect();
-            } catch (MySQL_exception $e) {
+            } catch (db_exception $e) {
                 echo 'Mysqlerror: '.$e->getMessage()."\n";
             }
             return false;
@@ -199,6 +197,12 @@ class SteelBotDB implements ISteelBotDB  {
             }
             return $return;
         }
+    }
+    
+    public function GetTableNames() {
+        return array( 'user' => $this->table_prefix.'users',
+                      'data' => $this->table_prefix.'data'
+        );
     }
     
     public static function EscapeString($str) {

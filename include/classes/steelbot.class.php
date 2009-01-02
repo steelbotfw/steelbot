@@ -14,16 +14,19 @@
 
 class SteelBot extends SteelBotCore {
 
-static  public $database,
-                $msgdropped = false,
-               $lng ;
+static public  $database,
+               $msgdropped = false,
+               $lng,
+               $sender,
+               $content,
+               $current_plugin = null;               
                 
 static public   $cmdlist = array();                
                 
 static function Init($cfg) {
-    echo "Initializing database ... "; 
+    slog::add('steelbot',"Initializing database ... "); 
     self::$database = new SteelBotDB();
-    echo "OK\n\n";
+    slog::result("OK");
     
     parent::$cfg = $cfg;
   
@@ -33,19 +36,15 @@ static function Init($cfg) {
         parent::RegisterEventHandler(EVENT_EXIT, array('SteelBot', 'SaveTimers'));
     }
     
-    // загрузка плагинов
+    
     parent::$next_timer = time() * 2;
 
-    
-    self::LoadPlugin(parent::$cfg['plugin_dir']);
-    // устанавлиаем все плагины
-    $pattern = parent::$cfg['plugin_dir'].
-               DIRECTORY_SEPARATOR."*"; 
-    
-    $plugdir = glob($pattern, GLOB_ONLYDIR);
-    foreach ($plugdir as $v) {
-        self::LoadPlugin( $v );
+    // загрузка плагинов
+    self::LoadPlugins(parent::$cfg['plugin_dir']);
+    foreach (self::$plugins as $name=>$plug) {
+        self::CheckDependency($name);    
     }
+    
     
     // commands accesses levels
     $commands_list = STEELBOT_DIR.'/tmp/commands.access';
@@ -53,31 +52,43 @@ static function Init($cfg) {
         $newlevels = unserialize( file_get_contents( $commands_list ) );
         foreach ($newlevels as $cmd=>$level) {
             if (array_key_exists($cmd, self::$cmdlist)) {
-                self::$cmdlist[$cmd][0] = $level;
+                self::$cmdlist[$cmd]->SetAccess($level);
             }
         }
     }
     
     // i18n
-    self::$lng = new SteelBotLng( parent::$cfg['language'] );
-    self::$lng->AddDict( STEELBOT_DIR.'/include/lang/'.parent::$cfg['language'].'.php' );
+    self::InitLang();
     
 }
 
+static function InitLang($lang = null) {
+    if (!$lang) {
+        $lang = parent::$cfg['language'];
+    } elseif (strlen($lang) > 2) {
+        $lang = substr($slng, 0,2);
+    }
+    
+    self::$lng = new SteelBotLng( $lang );
+    self::$lng->AddDict( STEELBOT_DIR.'/include/lang/'.$lang.'.php' );
+
+}
+
 static function SaveTimers() {
-    echo "Saving timers ... ";
+    slog::add('steelbot',"Saving timers ... ");
     if ( file_put_contents( parent::$cfg['timers_file'], serialize(parent::$timers)) ) {
-        echo "OK\n";
+        slog::result("OK");
     } else {
-        echo "ERROR\n";
+        slog::result("ERROR");
     }
 }
 
 static function SaveCommandsAccesses() {
     $commands_list = STEELBOT_DIR.'/tmp/commands.access';
     $accesses = array();
-    foreach (self::$cmdlist as $name=>$cm) {
-        $accesses[$name] = $cm[0];
+    foreach (self::$cmdlist as $obj) {
+        $name = $obj->GetName();
+        $accesses[$name] = $obj->GetAccess();
     }
     $result = file_put_contents($commands_list, serialize($accesses));
     return $result;
@@ -85,7 +96,7 @@ static function SaveCommandsAccesses() {
 
 static function LoadTimers($filename) {
     $now = time();
-    echo 'Loading timers ... ';
+    slog::add('steelbot', 'Loading timers ... ');
     if ( is_readable($filename) ) {
         $timers = @unserialize( $filename );
         if ( is_array($timers) ) {
@@ -95,73 +106,84 @@ static function LoadTimers($filename) {
                         parent::TimerAdd($time-time(), $func);
                     }
                 } else {
-                    echo "\n   timer skipped: ($time) ";
+                    slog::add('steelbot', "   timer skipped: ($time) ");
                 }
             }
-            echo "OK\n";
+            slog::result("OK");
         } else {
-            echo "no timers\n";
+            slog::result("no timers");
         }
         
     } else {
-        echo " OK\n";
+        slog::reswult("OK");
     }
             
 }
 
-static function LoadPlugin($dir) {
+static function LoadPlugins($dir) {
     $pattern = $dir.
                DIRECTORY_SEPARATOR."*.plugin.php"; 
     
     $pluglist = glob($pattern);
     foreach ($pluglist as $v) {
-        $shortname = str_replace('.plugin.php','',basename($v));
-        echo "Loading plugin: $shortname ... ";
-        include_once($v);
+        
+            try {
+                self::LoadPluginByName($v);
+            } catch (BotException $e) {
+                slog::add('steelbot','Exception: '.$e->getMessage(), LOG_PLUGIN_LOAD);
+            }
+        
+    } 
     
-        parent::$plugins[] = $shortname;
-        slog::add('', "$shortname", LOG_PLUGIN_LOAD);
-        parent::EventRun(EVENT_PLUGIN_LOADED, $shortname);
-        echo "OK\n";
-    }    
+    foreach (glob($dir.DIRECTORY_SEPARATOR.'*', GLOB_ONLYDIR) as $d) {
+        self::LoadPlugins($d);
+    }
 }
 
 static function LoadPluginByName($name) {
-    $name = str_replace('.plugin.php', '', $name);
-    if (array_key_exists($name, parent::$plugins)) {
-        return false;
+    $name = str_replace('.plugin.php', '', basename($name) );
+    if (is_dir(self::$cfg['plugin_dir'].DIRECTORY_SEPARATOR.$name)) {
+        $filename = self::$cfg['plugin_dir'].DIRECTORY_SEPARATOR.$name.DIRECTORY_SEPARATOR.$name.'.plugin.php';
     } else {
-        $fullname = parent::$cfg['plugin_dir']."/$name.plugin.php";
-        echo "Loading plugin: $name ... ";
-        if (is_readable($fullname)) {
-            include_once($fullname);
-    
-            parent::$plugins[] = $name;
-            slog::add('', "$name", LOG_PLUGIN_LOAD);
-            parent::EventRun(EVENT_PLUGIN_LOADED, $name);
-            echo "OK\n";   
+        $filename = self::$cfg['plugin_dir'].DIRECTORY_SEPARATOR.$name.'.plugin.php';
+    }
+    if (array_key_exists($name, parent::$plugins)) {
+        throw new BotException(("Plugin $name already exists"));
+    } else {
+        slog::add('steelbot', "Loading plugin: $name ... ");
+        $plug = new Plugin($filename);
+        
+        try {            
+            self::$current_plugin = $plug;
+                $plug->Load();
+                self::CheckDependency($name);
+                parent::$plugins[$name] = $plug;
+                slog::add('steelbot', "'$name' load OK", LOG_PLUGIN_LOAD);
+                parent::EventRun( new Event(EVENT_PLUGIN_LOADED, array('name'=>$name)));
+                   
+            self::$current_plugin = null;
             return true;
-        } else {
-            echo "ERROR\n";
-            return false;
+        } catch (BotException $e) {
+            throw $e;
         }
     }
 }
 
 static function Msg($text, $to = false) {
     if (!$to) {
-        $to = parent::$sender;        
+        $to = self::$sender;        
     }
-    Proto::Msg($text, $to);
-    slog::add('', "[>$to ".$text, LOG_MSG_SENT);
+    $ev = parent::EventRun( new Event(EVENT_MSG_SENT, array('text'=>$text, 'to'=>$to)) );
+    Proto::Msg($ev->text, $ev->to);
+    slog::add('steelbot', "[>$to ".$text, LOG_MSG_SENT);
 }
     
 static function GetUin() {
-	return parent::$sender;
+	return self::$sender;
 }
 
 static function GetMsgText() {
-	return parent::$content;
+	return self::$content;
 }       
        
 /**
@@ -171,9 +193,9 @@ static function GetMsgText() {
  */
 static function CmdHelp($cmd) {
     if (array_key_exists($cmd, self::$cmdlist)) {
-        Proto::Msg(self::$cmdlist[$cmd][2]);
+        self::Msg( self::$cmdlist[$cmd]->GetHelp() );
     } else {
-		Proto::Msg( LNG( LNG_HELP_NOTFOUND, $cmd ) );
+		self::Msg( LNG( LNG_HELP_NOTFOUND, $cmd ) );
 	}
 }
 
@@ -190,32 +212,93 @@ static function CmdHelp($cmd) {
  * @return REG_CMD_ALREADY_DEFINED - команда уже определена ранее
  *         REG_CMD_OK - команда зарегистрирована
  */
-static function RegisterCmd($command,$func,$access = 1,$helpstr = false) {
-    if (!parent::$cfg['msg_case_sensitive']) {
-        $command = mb_strtolower($command, 'utf-8');
-    }
-	if (!is_numeric($access)) {
-	    $access = 1;
-	}
+static function RegisterCmd($command, $func, $access = 1, $helpstr = false) {
+    if ($command instanceof BotCommand) {
+        $name = mb_strtolower( $command->GetName() );
+        if ( !array_key_exists($name, self::$cmdlist)) {
+            self::$cmdlist[$name] = $command;    
+        } else {
+           slog::add('steelbot', $command. ' => '.func2str(self::$cmdlist[$command]->GetName()), LOG_CMD_ALREADY_REG );
+           return REG_CMD_ALREADY_DEFINED; 
+        }
+        
+            
+    } else {
+       if (!parent::$cfg['msg_case_sensitive']) {
+            $command = mb_strtolower($command, 'utf-8');
+       }
+	   if (!is_numeric($access)) {
+	        $access = 1;
+	   }
 	
 	if (array_key_exists($command, self::$cmdlist)) {
-	    slog::add('', $command. ' => '.func2str(self::$cmdlist[$command][1]), LOG_CMD_ALREADY_REG );
+	    slog::add('steelbot', $command. ' => '.func2str(self::$cmdlist[$command]->GetName()), LOG_CMD_ALREADY_REG );
 		return REG_CMD_ALREADY_DEFINED;
 		
 	} else {
 	    
-	if (!$helpstr) {
-	    $helpstr = LNG(LNG_NOHELP);
-	}
+	    if (!$helpstr) {
+	        $helpstr = LNG(LNG_NOHELP);
+	    }
 	    
 	
-	
-	self::$cmdlist[$command][0] = $access;
-	self::$cmdlist[$command][1] = $func;
-	self::$cmdlist[$command][2] = $helpstr;
-	slog::add('', $command. ' => '.func2str($func), LOG_CMD_REGISTER);
+	    $obj = new BotCommand($command, $func, $access, $helpstr);
+	    self::$cmdlist[ $command ] = $obj;
+		
+	    }
+    }
+    if (self::$current_plugin != null) {
+        self::$current_plugin->AddCommand($command);
+    }
+    slog::add('steelbot', $command. ' => '.func2str($func), LOG_CMD_REGISTER);
 	return REG_CMD_OK;
-	}
+}
+
+static function AddDependence($dep, $maj_ver=99, $min_ver=99, $type='plugin') {
+    if (self::$current_plugin == null) {
+        return;
+    } else {
+        self::$current_plugin->AddDependence($dep, $maj_ver, $min_ver, $type);
+    }
+    
+    
+}
+
+static function CheckDependency($plugin) {
+    if (array_key_exists($plugin, self::$plugins)) {
+        slog::add('steelbot', "Checking for dependencies $plugin... ");
+        $plug_dep = self::$plugins[$plugin]->GetDependencies('plugin');
+        foreach ($plug_dep as $dep) {
+            if ( array_key_exists($dep['dep'], self::$plugins) ) {
+                $info = self::$plugins[$dep['dep']]->GetInfo();
+                if ( ($info['major_ver'] >= $dep['major_ver']) ||
+                     ($info['minor_ver'] >= $dep['minor_ver']) ) {
+                         continue;
+                     }
+            }
+            
+            if ( ($dep['major_ver'] == 99) && ( $dep['minor_ver'] ) == 99 ) {
+                    $ver = '';
+            } else {
+                    $ver = "{$dep['major_ver']}.{$dep['minor_ver']}";
+            }
+            throw new BotException("Plugin $name require {$dep['dep']} $ver plugin", ERR_DEPENDENCY);
+            
+        }    
+        slog::result("OK");
+    }
+}
+
+static function ExportInfo($name, $major_ver, $minor_ver, $author) {
+    if (self::$current_plugin != null) {
+        $info = array(
+            'name' => $name,
+            'author' => $author,
+            'major_ver' => $major_ver,
+            'minor_ver' => $minor_ver
+        );
+        self::$current_plugin->ExportInfo($info);
+    }
 }
 
 /**
@@ -228,7 +311,7 @@ static function RegisterCmd($command,$func,$access = 1,$helpstr = false) {
 static function UnregisterCmd($command) {
     if (array_key_exists($command,self::$cmdlist)) {
         unset(self::$cmdlist[$command]);
-        slog::add('', $command, LOG_CMD_UNREGISTER);
+        slog::add('steelbot', $command, LOG_CMD_UNREGISTER);
         return true;
     } else {
         return false;
@@ -250,11 +333,11 @@ static function DropMsg() {
  */
 static function SetCmdAccess($cmd,$level) {
 	if (!is_numeric($level)) {
-	    return false;
+	    throw new BotException("$level is not a numeric value", ERR_NOT_NUMERIC);
 	} elseif (array_key_exists($cmd,self::$cmdlist)) {
-		self::$cmdlist[$cmd][0] = $level;
+		self::$cmdlist[$cmd]->SetAccess( $level );
 		return true;
-	} else return false;
+	} else throw new BotException("Command does not exists", ERR_CMD_NOTFOUND);
 }
 
 static function SetOption($option, $value) {
@@ -277,28 +360,13 @@ static function help() {
 	if (empty($val)) {
             
 	        $level = self::GetUserAccess();
-	        $helpstr = LNG(LNG_HELPCOMMANDS)."\n";
-	        
-	        if (parent::$cfg['help_detailed']) {
-	           foreach (self::$cmdlist as $name=>$cmd) {
-	               if ( ($cmd[0] <= $level) && ($cmd[0] > 0)) {
-	                   $helpstr .= $cmd[2]."\n"; 
-	               }
-	           }
-	                
-	        } else {
-	           $commands = array();
-	           foreach (self::$cmdlist as $cmd) {
-	               if ( ($cmd[0] <= $level) && ($cmd[0] > 0)) {
-	                   $commands[] = $name;
-	               }
-	           }
-	           $helpstr .= implode(", ", $commands);
+	        $helpstr = array();;	        
+
+	        foreach (self::$cmdlist as $cmd) {	            
+	            $helpstr[] = $cmd->GetHelp(1); 
 	        }
-	        
-	        $helpstr .= "\n".parent::$cfg['help_ps'];
 	
-	        Proto::Msg($helpstr);
+	        self::Msg( LNG(LNG_HELPCOMMANDS)."\n".implode(', ',$helpstr) );
 	} else {
 	   self::CmdHelp($val); 
 	}
@@ -365,7 +433,7 @@ static function GetUserAccess($uin = false) {
  * @return unknown
  */
 static function Parse() {
-    list($command, $params) = explode(' ', parent::$content, 2);
+    list($command, $params) = explode(' ', self::$content, 2);
     if (!parent::$cfg['msg_case_sensitive']) {
         $command = mb_strtolower($command, 'utf-8');
     }
@@ -373,28 +441,38 @@ static function Parse() {
         self::Msg(parent::$cfg['err_cmd']);
 		return false;
 		    
-	} elseif (self::$cmdlist[$command][0] > self::GetUserAccess()){
-	    self::Msg( LNG(LNG_CMDNOACCESS) );
-	        
 	} else {
-	    call_user_func(self::$cmdlist[$command][1], $params);
+	    try {
+	        self::$cmdlist[$command]->Execute( $params );
+	        
+	    } catch (BotException $e) {
+	        slog::add('steelbot', $e->getMessage(), LOG_EXCEPTION);
+	        switch ($e->getCode()) {
+	            case ERR_CMD_ACCESS:
+	                self::Msg( LNG(LNG_CMDNOACCESS) );
+	                break;
+	                
+	            case ERR_FUNC:
+	                break;
+	        }
+	    }
 	}
 	return true;    
 }
 
 static function Connect() {
     if ($p = Proto::Connect(parent::$cfg['bot_uin'], parent::$cfg['bot_password']) ) {
-        slog::add('', "Connected", LOG_CONNECTED);
-        parent::EventRun(EVENT_CONNECTED);    
+        slog::add('steelbot', "Connected", LOG_CONNECTED);
+        parent::EventRun( new Event(EVENT_CONNECTED) );    
     } else {
-        slog::add('', "Connection error", LOG_CONNECTION_ERROR);
+        slog::add('steelbot', "Connection error", LOG_CONNECTION_ERROR);
     }
     return $p;
 }
 
 static function Disconnect() {
     Proto::Disconnect();
-    slog::add('', "Disconnected", LOG_DISCONNECTED);
+    slog::add('steelbot', "Disconnected", LOG_DISCONNECTED);
 }
 
 static function Connected() {
@@ -405,10 +483,14 @@ static function ParseMessage() {
     self::$msgdropped = false;
     $message = Proto::GetMessage();
     if ($message) {
- 	  parent::$sender = $message[0];
- 	  parent::$content = trim($message[1]);
- 	  slog::add('', parent::$content, LOG_MSG_RECIEVED, parent::$sender);
- 	  parent::EventRun(EVENT_MSG_RECIEVED);
+ 	  self::$sender = $message[0];
+ 	  self::$content = trim($message[1]);
+ 	  slog::add('steelbot', self::$content, LOG_MSG_RECIEVED, self::$sender);
+ 	  $ev = parent::EventRun( new Event(EVENT_MSG_RECIEVED, 
+ 	      array('sender' => $message[0], 'content'=>trim($message[1]) ) ));
+ 	  self::$sender = $ev->sender;
+ 	  self::$content = $ev->content;
+ 	  
  	  if (!self::$msgdropped) {
  	      self::Parse();
  	  }
@@ -422,12 +504,28 @@ static function Error() {
 
 static function DeleteLockFile($uin = false) {
     if (!$uin) $uin = parent::$cfg['bot_uin'];
-    $filename = dirname(__FILE__)."/tmp/$uin.lock";
+    $filename = STEELBOT_DIR."/tmp/$uin.lock";
+    $filename = str_replace('/', DIRECTORY_SEPARATOR, $filename);
+    slog::add('steelbot', "Deleting lock file $filename ..");
     if (file_exists($filename)) {
         return @unlink( $filename );
     } else {
         return true;
     }
+}
+
+static function CheckLockFile($uin = false) {
+    if (!$uin) $uin = parent::$cfg['bot_uin'];
+    $filename = STEELBOT_DIR."/tmp/$uin.lock";
+    $filename = str_replace('/', DIRECTORY_SEPARATOR, $filename);
+    return file_exists($filename);    
+}
+
+static function CreateLockFile($uin = false) {
+    if (!$uin) $uin = parent::$cfg['bot_uin'];
+    $filename = STEELBOT_DIR."/tmp/$uin.lock";
+    $filename = str_replace('/', DIRECTORY_SEPARATOR, $filename);
+    return file_put_contents( $filename, '1' );
 }
 
 }

@@ -35,18 +35,29 @@ static function Connected() {
 
 static function GetMessage() {
     $msg = self::$icq->ReadMessage();
-    if ( empty($msg['message']) ) {
-        return false;
-    } else {
+    switch($msg['type']) {
+        case 'message': //removing #0 character (QIP Infium bug)
+                        $msg['message'] = str_replace(chr(0), '', $msg['message']);
         
-        //removing #0 character (QIP Infium bug)
-        $msg['message'] = str_replace(chr(0), '', $msg['message']);
+                        if (SteelBot::$cfg['msg_charset_in']) {
+                            $msg['message'] = iconv(SteelBot::$cfg['msg_charset_in'], 'utf-8', $msg['message']);
+                        }
         
-        if (SteelBot::$cfg['msg_charset_in']) {
-            $msg['message'] = iconv(SteelBot::$cfg['msg_charset_in'], 'utf-8', $msg['message']);
-        }
-        
-        return array($msg['from'], $msg['message']);
+                        return array($msg['from'], $msg['message']);
+        case 'accepted':
+            
+            break;
+            
+        case 'offlinemessage':
+            slog::add('proto', "offline message recieved");
+            break;
+            
+        case 'error':
+            slog::add('proto', "Error ".@$msg['code'].": ".@$msg['error']);
+            break;
+            
+        default:
+                 return false;
     }
 }
 
@@ -56,7 +67,7 @@ static function Error() {
 
 static function Msg($txt,$touin = false) {
 	if (!$touin) {
-	    $touin = SteelBotCore::$sender;
+	    $touin = SteelBot::$sender;
 	}
 	
 	if (SteelBot::$cfg['msg_charset']) {

@@ -12,3 +12,4 @@ define('LOG_CMD_ALREADY_REG',  '008');
 define('LOG_DISCONNECTED',     '009');
 define('LOG_TIMER_ADD',        '010');
 define('LOG_DB_ERROR ',        '011');
+define('LOG_EXCEPTION',        '012');

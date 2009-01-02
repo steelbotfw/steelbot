@@ -1,23 +1,18 @@
 <?php
 
 /**
- * admin - плагин для SteelBot
+ * admin - SteelBot plugin
  * 
  * http://steelbot.net
  * 
  * @author N3x^0r
- * @version 1.3
+ * @version 1.4
  *
- * 2008-09-17
+ * 2009-01-02
  * 
  */
 
-SteelBot::RegisterEventHandler(EVENT_MSG_RECIEVED, array('SteelBotAdmin', 'ParseCommand'));
 
-if (!defined('STEELBOT_MAJOR_VER') || (STEELBOT_MAJOR_VER < 1) || (STEELBOT_MINOR_VER < 3)) {
-    echo "ERROR: plugin admin require SteelBot 1.3 or higher version. You can download it from http://steelbot.net\n";
-    SteelBot::DoExit();
-}
 
 class SteelBotAdmin {
 
@@ -43,8 +38,8 @@ static $firstchar = '.',
                             'func' => array('SteelBotAdmin', 'CmdOpt'),                            
                           ),
                           
-           'plugins' =>   array(
-                            'func' => array('SteelBotAdmin', 'CmdPlugins'),                            
+           'plugin'    =>   array(
+                            'func' => array('SteelBotAdmin', 'CmdPlugin'),                            
                           ),
                                                     
            'reconnect' => array(
@@ -60,7 +55,7 @@ static $firstchar = '.',
            'timer' => array(
                             'func' => array('SteelBotAdmin', 'CmdTimer'),
                           
-                          )                            
+                          )                        
        );
    
 static function _($key) {
@@ -91,23 +86,26 @@ static function ParseCommand() {
 	    }
 	    SteelBot::DropMsg();
 	}
+	return true;
 }     
 
 static function CmdHelp($cmd) {
     if ($cmd[0] == self::$firstchar) {
         $cmd = substr($cmd, 1);
-    }
+    } 
     if ( empty($cmd) ) {
         $list = array_keys(self::$commands);
         sort($list);
         $commands = self::$firstchar.implode(', '.self::$firstchar, $list );
-        SteelBot::Msg(self::_('cmdhelp_1')."\n".$commands);
+           
+        SteelBot::Msg( self::_('cmdhelp_1', $commands) );
            
     } elseif (array_key_exists($cmd, self::$commands)) {
         SteelBot::Msg(self::$commands[$cmd]['helpstr']);
         
     } else {    
         SteelBot::Msg(self::_('cmdhelp_2', self::$firstchar, $cmd) ); 
+        
     }
 }
 
@@ -116,7 +114,7 @@ static function CmdReconnect() {
 }
 
 static function CmdExit() {
-    echo "Exit requested by ".SteelBot::GetUin()."\n";
+    slog::add('admin', "Exit requested by ".SteelBot::GetUin() );
     SteelBot::Msg( self::_('cmdexit_1') );
     SteelBot::DoExit();    
 }
@@ -216,26 +214,29 @@ static function CmdCmdAccess($p1) {
         return;
     }
     list($p1, $p2) = explode(' ', $p1,2);
-    if (empty($p2)) {
+    if (is_null($p2)) {
         if (array_key_exists($p1, SteelBot::$cmdlist)) {       
-            SteelBot::Msg(self::_('cmdcmdaccess_2', $p1, SteelBot::$cmdlist[$p1][0]));
+            SteelBot::Msg(self::_('cmdcmdaccess_2', $p1, SteelBot::$cmdlist[$p1]->GetAccess()));
         } else {
             SteelBot::Msg(self::_('cmdcmdaccess_3', $p1));
         }
         
-    } elseif ( ((int)$p2 < 100) && ((int)$p2 > 0) ) {
-        SteelBot::$cmdlist[$p1][0] = $p2;
-        SteelBot::Msg(self::_('cmdcmdaccess_4', $p1, $p2));
-        SteelBot::SaveCommandsAccesses();
+    } elseif ( ((int)$p2 <= 100) && ((int)$p2 > 0) ) {
+        if ( SteelBot::$cmdlist[$p1]->SetAccess( $p2 ) ) {
+            SteelBot::Msg(self::_('cmdcmdaccess_4', $p1, $p2));
+            SteelBot::SaveCommandsAccesses();
+        } else {
+            SteelBot::Msg("unknown error");
+        }
         
     } else {
         SteelBot::Msg(self::_('cmdcmdaccess_5'));
     }    
 }
 
-static function CmdPlugins($param) {
+static function CmdPlugin($param) {
     if (empty($param)) {
-        $plugins = implode(", ", SteelBot::$plugins);
+        $plugins = implode(", ", array_keys(SteelBot::$plugins) );
         SteelBot::Msg(self::_('cmdplugins_1', $plugins));    
     } else {
         list($cmd, $p1) = explode(' ', $param);
@@ -245,6 +246,50 @@ static function CmdPlugins($param) {
                          } else {
                              SteelBot::Msg(self::_('cmdplugins_3'));
                          }
+                break;
+                         
+            case 'enable': if (array_key_exists($p1, SteelBot::$plugins)) {
+                               $cmds = SteelBot::$plugins[$p1]->GetCommands();
+                               foreach ($cmds as $cmd) {
+                                   SteelBot::$commands[$cmd]->Enable();
+                               }
+                           }
+                
+                break;
+                
+            case 'disable':
+                           if (array_key_exists($p1, SteelBot::$plugins)) {
+                               $cmds = SteelBot::$plugins[$p1]->GetCommands();
+                               foreach ($cmds as $cmd) {
+                                   SteelBot::$commands[$cmd]->Disable();
+                               }
+                           }
+                break;
+                         
+            case 'info': if (array_key_exists($p1, SteelBot::$plugins)) {
+                            $info = SteelBot::$plugins[$p1]->GetInfo();
+                            $commands = SteelBot::$plugins[$p1]->GetCommands();
+                            $dependencies = SteelBot::$plugins[$p1]->GetDependencies('plugin');
+                            $depstr = array();
+                            foreach ($dependencies as $k=>$v) {
+                                if ( ($v['major_ver'] == 99) && ($v['minor_ver']==99) ) {
+                                    $depstr[] = $v['dep'];
+                                } else {
+                                    $depstr[] = $v['dep'].' '.$v['major_ver'].'.'.$v['minor_ver'];
+                                }
+                            }
+                            $message = self::_( 'cmdplugins_4', 
+                                                $p1, 
+                                                $info['author'], 
+                                                $info['major_ver'].'.'.$info['minor_ver'],
+                                                implode(', ', $commands),
+                                                implode(', ', $depstr)
+                                                );
+                            SteelBot::Msg($message);
+                         } else {
+                            SteelBot::Msg(self::_('cmdplugins_5'), $p1); 
+                         }
+                         break;
         }
     }
 }
@@ -355,13 +400,38 @@ static function CmdTimer($val) {
     }
 }
 
-
 }
 
+if (!defined('STEELBOT_MAJOR_VER') || (STEELBOT_MAJOR_VER < 1) || (STEELBOT_MINOR_VER < 3)) {
+    slog::add('admin', "ERROR: plugin admin require SteelBot 1.3 or higher version. You can download it from http://steelbot.net");
+    SteelBot::DoExit();
+} else {
+    SteelBot::RegisterEventHandler(EVENT_MSG_RECIEVED, array('SteelBotAdmin', 'ParseCommand'));
 
-SteelBotAdmin::$lng = new SteelBotLng( 'ru', 'ru' );
-SteelBotAdmin::$lng->AddDict( dirname(__FILE__).'/'.SteelBot::$cfg['language'].'.php' );
-SteelBotAdmin::$lng->AddDict( dirname(__FILE__).'/ru.php' );
-foreach (SteelBotAdmin::$commands as $k=>$v) {
-    SteelBotAdmin::$commands[$k]['helpstr'] = SteelBotAdmin::$lng->GetTranslate('cm_'.strtolower($k));
+    SteelBot::ExportInfo('admin', 1,4, 'Nexor');
+
+    SteelBotAdmin::$lng = new SteelBotLng( 'ru', 'ru' );
+    SteelBotAdmin::$lng->AddDict( dirname(__FILE__).'/'.SteelBot::$cfg['language'].'.php' );
+    SteelBotAdmin::$lng->AddDict( dirname(__FILE__).'/ru.php' );
+
+    $dbtype = SteelBot::$database->GetDBInfo();
+    switch ($dbtype['name']) {
+        case 'txtdbapi':
+        case 'mysqldb':
+            include dirname(__FILE__).DIRECTORY_SEPARATOR."dbcontrol.php";
+            SteelBotAdmin::$commands['dbinfo'] = array(
+                    'func' => array('AdminDBControl','Info')
+            );
+            SteelBotAdmin::$commands['user'] = array(
+                    'func' => array('AdminDBControl', 'User')
+            ); 
+            break;
+        
+        default:
+            slog::add('admin', "Unknown database"); 
+    }
+
+    foreach (SteelBotAdmin::$commands as $k=>$v) {
+        SteelBotAdmin::$commands[$k]['helpstr'] = SteelBotAdmin::$lng->GetTranslate('cm_'.strtolower($k));
+    }
 }

@@ -10,22 +10,43 @@ include('rtf.class.php');
  * See http://www.gnu.org/copyleft/lesser.html
  * 
  * @author Sergey Akudovich
- * @version 1.2b
+ * @version 1.4.6b
  * @package WebIcqPro
  *
  */
 
-/**
- * Layer for TLV (Type-Length-Value) data format 
- * @access private
- */
-class WebIcqPro_TLV {
+class WebIcqPro_LV {
 	/**
 	 * Last error message
 	 *
 	 * @var string
 	 */
 	public $error;
+
+	protected function packLV($value, $length = 'n')
+	{
+		return pack($length, strlen($value)).$value;
+	}
+
+	protected function unpackLV(&$data, $length = 2)
+	{
+		if (strlen($data)>=$length)
+		{
+			$result = unpack('nsize', $data);
+			$result['data'] = substr($data, $length , $result['size']);
+			$data = substr($data, $result['size']+$length);
+			return $result['data'];
+		}
+		$this->error = 'unpackLV brocken LV';
+		return false;
+	}
+}
+
+/**
+ * Layer for TLV (Type-Length-Value) data format 
+ * @access private
+ */
+class WebIcqPro_TLV extends WebIcqPro_LV {
 
 	/**
 	 * Pack data to TLV
@@ -79,10 +100,9 @@ class WebIcqPro_TLV {
 	{
 		if (strlen($data)>=4)
 		{
-			$result = unpack('ntype/nsize/a*data', $data);
-			$data = $result['data'];
-			$result['data'] = substr($data, 0 , $result['size']);
-			$data = substr($data, $result['size']);
+			$result = unpack('ntype/nsize', $data);
+			$result['data'] = substr($data, 4 , $result['size']);
+			$data = substr($data, $result['size']+4);
 			return $result;
 		}
 		$this->error = 'Error: unpackTLV brocken TLV';
@@ -201,29 +221,49 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	'version' => 0x01
 	),
 	0x03 => array( // Buddy List management service
+	0x01 => 'OscarError',
 	0x02 => 'ClientBuddylistRights',
 	0x03 => 'ServerBuddylistRights',
+	0x04 => 'ClientBuddylistAdd',
+	0x05 => 'ClientBuddylistDelete',
+	0x0B => 'ServerUserOnline',
+	0x0C => 'ServerUserOffline',
 	'version' => 0x01
 	),
 	0x04 => array( // ICBM (messages) service
+	0x01 => 'OscarError',
 	0x04 => 'ClientIBCMRights',
 	0x05 => 'ServerIBCMRights',
 	0x06 => 'ClientIBCM',
 	0x07 => 'ServerIBCM',
 	0x0B => 'ClientIBCMAck',
+	0x0C => 'ServerIBCMAck',
 	'version' => 0x01
 	),
 	0x09 => array( // Privacy management service
 	0x02 => 'ClientPrivicyRights',
-	0x02 => 'ServerPrivicyRights',
+	0x03 => 'ServerPrivicyRights',
 	'version' => 0x01
 	),
 	0x13 => array( // Server Side Information (SSI) service
+	0x01 => 'ServerSSIError',
 	0x02 => 'ClientSSIRights',
-	0x02 => 'ServerSSIRights',
-	0x05 => 'ServerSSICheckout',
-	0x07 => 'ServerSSIActivate',
+	0x03 => 'ServerSSIRights',
+	0x04 => 'ClientSSI',
+	0x05 => 'ClientSSICheckout',
+	0x06 => 'ServerSSI',
+	0x07 => 'ClientSSIActivate',
+	0x08 => 'ClientSSIAdd',
+	0x0A => 'ClientSSIDelete',
+	0x0E => 'ServerSSIAck',
 	0x0F => 'ServerSSIModificationDate',
+	0x11 => 'ClientSSIEditStart',
+	0x12 => 'ClientSSIEditEnd',
+	0x18 => 'ClientSSIAuthRequest',
+	0x19 => 'ServerSSIAuthRequest',
+	0x1a => 'ClientSSIAuthResponse',
+	0x1b => 'ServerSSIAuthResponse',
+	0x1c => 'ServerSSIYouAdded',
 	'version' => 0x04
 	),
 	0x15 => array( // ICQ specific extensions service
@@ -239,6 +279,8 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	'version' => 0x01
 	)
 	);
+
+	public $debug = false;
 
 	protected $protocol_version = 8;
 	protected $capability_flag = '03000000';
@@ -281,6 +323,41 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	0x0022 => 'Account suspended because of your age (age < 13)'
 	);
 
+	private $oscar_errors = array(
+	0x01 => 'Invalid SNAC header.',
+	0x02 => 'Server rate limit exceeded',
+	0x03 => 'Client rate limit exceeded',
+	0x04 => 'Recipient is not logged in',
+	0x05 => 'Requested service unavailable',
+	0x06 => 'Requested service not defined',
+	0x07 => 'You sent obsolete SNAC',
+	0x08 => 'Not supported by server',
+	0x09 => 'Not supported by client',
+	0x0A => 'Refused by client',
+	0x0B => 'Reply too big',
+	0x0C => 'Responses lost',
+	0x0D => 'Request denied',
+	0x0E => 'Incorrect SNAC format',
+	0x0F => 'Insufficient rights',
+	0x10 => 'In local permit/deny (recipient blocked)',
+	0x11 => 'Sender too evil',
+	0x12 => 'Receiver too evil',
+	0x13 => 'User temporarily unavailable',
+	0x14 => 'No match',
+	0x15 => 'List overflow',
+	0x16 => 'Request ambiguous',
+	0x17 => 'Server queue full',
+	0x18 => 'Not while on AOL',
+	);
+	private $oscar_buddy_errors = array(
+	0x0000 => 'No errors (success)',
+	0x0002 => 'Item you want to modify not found in list',
+	0x0003 => 'Item you want to add allready exists',
+	0x000A => 'Error adding item (invalid id, allready in list, invalid data)',
+	0x000C => 'Can\'t add item. Limit for this type of items exceeded',
+	0x000D => 'Trying to add ICQ contact to an AIM list',
+	0x000E => 'Can\'t add this contact because it requires authorization'
+	);
 	protected $substatuses = array(
 	'STATUS_WEBAWARE'   => 0x0001,
 	'STATUS_SHOWIP'     => 0x0002,
@@ -295,27 +372,32 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	'STATUS_ONLINE'     => 0x0000,
 	'STATUS_AWAY'       => 0x0001,
 	'STATUS_DND'        => 0x0002,
+	'STATUS_DND2'       => 0x0013,
 	'STATUS_NA'         => 0x0004,
+	'STATUS_NA2'        => 0x0005,
 	'STATUS_OCCUPIED'   => 0x0010,
+	'STATUS_OCCUPIED2'  => 0x0011,
 	'STATUS_FREE4CHAT'  => 0x0020,
-	'STATUS_INVISIBLE'  => 0x0100
+	'STATUS_INVISIBLE'  => 0x0100,
+ 	'STATUS_EVIL'       => 0x3000,
+ 	'STATUS_DEPRESSION' => 0x4000,
+ 	'STATUS_ATHOME'     => 0x5000,
+ 	'STATUS_ATWORK'     => 0x6000,
+ 	'STATUS_LUNCH'		=> 0x2001,
+ 	'STATUS_OFFLINE'	=> 0xFFFF
 	);
 
 	protected $status_message = '';
 
 	protected $capabilities = array(
-	//	'094600004C7F11D18222444553540000', //  Uncknown
-	//	'0946134D4C7F11D18222444553540000', //  Setting this lets AIM users receive messages from ICQ users, and ICQ users receive messages from AIM users. It also lets ICQ users show up in buddy lists for AIM users, and AIM users show up in buddy lists for ICQ users. And ICQ privacy/invisibility acts like AIM privacy, in that if you add a user to your deny list, you will not be able to see them as online (previous you could still see them, but they couldn't see you.
+	'094600004C7F11D18222444553540000', //  Avatar
+	'0946134D4C7F11D18222444553540000', //  Setting this lets AIM users receive messages from ICQ users, and ICQ users receive messages from AIM users. It also lets ICQ users show up in buddy lists for AIM users, and AIM users show up in buddy lists for ICQ users. And ICQ privacy/invisibility acts like AIM privacy, in that if you add a user to your deny list, you will not be able to see them as online (previous you could still see them, but they couldn't see you.
 	'094613444C7F11D18222444553540000', //  Something called "route finder". Currently used only by ICQ2K clients.
 	'094613494C7F11D18222444553540000', //	Client supports channel 2 extended, TLV(0x2711) based messages. Currently used only by ICQ clients. ICQ clients and clones use this GUID as message format sign.
-	//	'1A093C6CD7FD4EC59D51A6474E34F5A0', //  Uncknown
-	//	'0946134E4C7F11D18222444553540000', //	Client supports UTF-8 messages. This capability currently used by AIM service and AIM clients.
+	'1A093C6CD7FD4EC59D51A6474E34F5A0', //  Xtraz
+	'0946134E4C7F11D18222444553540000', //	Client supports UTF-8 messages. This capability currently used by AIM service and AIM clients.
 	'97B12751243C4334AD22D6ABF73F1492', //  Client supports RTF messages. This capability currently used by ICQ service and ICQ clients.
-	//	'563FC8090B6f41BD9F79422609DFA2F3', //	Unknown capability This capability currently used only by ICQLite/ICQ2Go clients.
-
-	//		'094600004C7F11D18222444553540000',
-	//		'1A093C6CD7FD4EC59D51A6474E34F5A0',
-	//		'D4A611D08F014EC09223C5B6BEC6CCF0'
+	'563FC8090B6f41BD9F79422609DFA2F3', //	Typing Notifications
 	);
 
 	protected $user_agent_capability = array(
@@ -357,8 +439,28 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	//		'HtmlMsgs   => '0138ca7b769a491588f213fc00979ea8',
 	//		'SimpLite   => '53494D5053494D5053494D5053494D50',
 	//		'SimpPro    => '53494D505F50524F53494D505F50524F',
-	'webicqpro' => '57656249637150726f2076302e336200'
+	'webicqpro' => '57656249637150726f00010405000062'
 	);
+
+	private $message_capabilities = array(
+	'TLV2711'     => '094613494c7f11d18222444553540000',
+	'REVERSE_REQ' => '094613444c7f11d18222444553540000',
+	'OSCAR_FT'    => '094613434c7f11d18222444553540000',
+	'OSCAR_FT'    => '094613434c7f11d18222444553540000',
+	'MESSAGE'     => '00000000000000000000000000000000',
+	'PLUGIN'      => ARRAY(
+	'MESSAGE'       => 'be6b73050fc2104fa6de4db1e3564b0e',
+	'STATUSMSGEXT'  => '811a18bc0e6c1847a5916f18dcc76f1a',
+	'FILE'          => 'f02d12d93091d3118dd700104b06462e',
+	'WEBURL'        => '371c5872e987d411a4c100d0b759b1d9',
+	'CONTACTS'      => '2a0e7d467676d411bce60004ac961ea6',
+	'GREETING_CARD' => '01e53b482ae4d111b679006097e1e294',
+	'CHAT'          => 'bff720b2378ed411bd280004ac96d905',
+	'SMS_MESSAGE'   => '0e28f60011e7d311bcf30004ac969dc2',
+	'XTRAZ_SCRIPT'  => '3b60b3efd82a6c45a4e09c5a5e67e865'
+	)
+	);
+
 
 	/**
 	 * Set of - X Statuses.
@@ -367,39 +469,47 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	 * @var array
 	 */
 	protected $x_statuses = array(
-	"Angry"               => '01D8D7EEAC3B492AA58DD3D877E66B92',
-	"Taking a bath"       => '5A581EA1E580430CA06F612298B7E4C7',
-	"Tired"               => '83C9B78E77E74378B2C5FB6CFCC35BEC',
-	"Party"               => 'E601E41C33734BD1BC06811D6C323D81',
-	"Drinking beer"       => '8C50DBAE81ED4786ACCA16CC3213C7B7',
-	"Thinking"            => '3FB0BD36AF3B4A609EEFCF190F6A5A7F',
-	"Eating"              => 'F8E8D7B282C4414290F810C6CE0A89A6',
-	"Watching TV"         => '80537DE2A4674A76B3546DFD075F5EC6',
-	"Meeting"             => 'F18AB52EDC57491D99DC6444502457AF',
-	"Coffee"              => '1B78AE31FA0B4D3893D1997EEEAFB218',
-	"Listening to music"  => '61BEE0DD8BDD475D8DEE5F4BAACF19A7',
-	"Business"            => '488E14898ACA4A0882AA77CE7A165208',
-	"Shooting"            => '107A9A1812324DA4B6CD0879DB780F09',
-	"Having fun"          => '6F4930984F7C4AFFA27634A03BCEAEA7',
-	"On the phone"        => '1292E5501B644F66B206B29AF378E48D',
-	"Gaming"              => 'D4A611D08F014EC09223C5B6BEC6CCF0',
-	"Studying"            => '609D52F8A29A49A6B2A02524C5E9D260',
-	"Shopping"            => '63627337A03F49FF80E5F709CDE0A4EE',
-	"Feeling sick"        => '1F7A4071BF3B4E60BC324C5787B04CF1',
-	"Sleeping"            => '785E8C4840D34C65886F04CF3F3F43DF',
-	"Surfing"             => 'A6ED557E6BF744D4A5D4D2E7D95CE81F',
-	"Browsing"            => '12D07E3EF885489E8E97A72A6551E58D',
-	"Working"             => 'BA74DB3E9E24434B87B62F6B8DFEE50F',
-	"Typing"              => '634F6BD8ADD24AA1AAB9115BC26D05A1',
-	"Picnic"              => '2CE0E4E57C6443709C3A7A1CE878A7DC',
-	"Cooking"             => '101117C9A3B040F981AC49E159FBD5D4',
-	"Smoking"             => '160C60BBDD4443F39140050F00E6C009',
-	"I'm high"            => '6443C6AF22604517B58CD7DF8E290352',
-	"On WC"               => '16F5B76FA9D240358CC5C084703C98FA',
-	"To be or not to be"  => '631436ff3f8a40d0a5cb7b66e051b364',
-	"Watching pro7 on TV" => 'b70867f538254327a1ffcf4cc1939797',
-	"Love"                => 'ddcf0ea971954048a9c6413206d6f280',
+	"journal"             => '0072d9084ad143dd91996f026966026f',
+	"angry"               => '01d8d7eeac3b492aa58dd3d877e66b92',
+	"ppc"                 => '101117c9a3b040f981ac49e159fbd5d4',
+	"cinema"              => '107a9a1812324da4b6cd0879db780f09',
+	"phone"               => '1292e5501b644f66b206b29af378e48d',
+	"browsing"            => '12d07e3ef885489e8e97a72a6551e58d',
+	"mobile"              => '160c60bbdd4443f39140050f00e6c009',
+	"wc"                  => '16f5b76fa9d240358cc5c084703c98fa',
+	"coffee"              => '1b78ae31fa0b4d3893d1997eeeafb218',
+	"sick"                => '1f7a4071bf3b4e60bc324c5787b04cf1',
+	"picnic"              => '2ce0e4e57c6443709c3a7a1ce878a7dc',
+	"thinking"            => '3fb0bd36af3b4a609eefcf190f6a5a7e',
+	"smoking"             => '3fb0bd36af3b4a609eefcf190f6a5a7f',
+	"business"            => '488e14898aca4a0882aa77ce7a165208',
+	"duck"                => '5a581ea1e580430ca06f612298b7e4c7',
+	"studying"            => '609d52f8a29a49a6b2a02524c5e9d260',
+	"?"                   => '631436ff3f8a40d0a5cb7b66e051b364',
+	"typing"              => '634f6bd8add24aa1aab9115bc26d05a1',
+	"shopping"            => '63627337a03f49ff80e5f709cde0a4ee',
+	"music"               => '61bee0dd8bdd475d8dee5f4baacf19a7',
+	"zzz"                 => '6443c6af22604517b58cd7df8e290352',
+	"fun"                 => '6f4930984f7c4affa27634a03bceaea7',
+	"sleeping"            => '785e8c4840d34c65886f04cf3f3f43df',
+	"tv"                  => '80537de2a4674a76b3546dfd075f5ec6',
+	"tired"               => '83c9b78e77e74378b2c5fb6cfcc35bec',
+	"beer"                => '8c50dbae81ed4786acca16cc3213c7b7',
+	"surfing"             => 'a6ed557e6bf744d4a5d4d2e7d95ce81f',
+	"pro7"                => 'b70867f538254327a1ffcf4cc1939797',
+	"working"             => 'ba74db3e9e24434b87b62f6b8dfee50f',
+	"love2"               => 'cd5643a2c94c4724b52cdc0124a1d0cd',
+	"gaming"              => 'd4a611d08f014ec09223c5b6bec6ccf0',
+	"google"              => 'd4e2b0ba334e4fa598d0117dbf4d3cc8',
+	"love"                => 'ddcf0ea971954048a9c6413206d6f280',
+	"party"               => 'e601e41c33734bd1bc06811d6c323d81',
+	"sex"                 => 'e601e41c33734bd1bc06811d6c323d82',
+	"meeting"             => 'f18ab52edc57491d99dc6444502457af',
+	"eating"              => 'f8e8d7b282c4414290f810c6ce0a89a6',
 	);
+
+	protected $contact_list = array();
+	protected $contact_list_groups = array('all_childs_ids' => array(0));
 
 	/**
 	 * Set default values
@@ -414,11 +524,52 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		$this->setUserAgent();
 	}
 
+	public function log($msg, $data='', $tolog = false)
+	{
+		$msg .= "\n".trim($this->beautifyBinaryLog($data))."\n\n";
+		if ($tolog)
+		{
+			$this->dump($msg, false);
+		}
+		else
+		{
+			$this->dump($msg);
+		}
+	}
+
+	private function beautifyBinaryLog($data)
+	{
+		$return = chunk_split(chunk_split(strtoupper(bin2hex($data)), 2, ' '), 24, ' ');
+		$return = str_split($return, 50);
+		$search = array("\r", "\n", "\t");
+		$replace = array(".", ".", ".");
+		foreach ($return as $key => $line)
+		{
+			$return[$key] = str_pad($line, 50) . str_replace($search, $replace, substr($data, 0+16*$key, 16));
+		}
+		return  implode("\r\n", $return);
+	}
+
+	private function dump($str, $file = 'dump')
+	{
+		if ($this->debug && $file) {
+			$f = fopen($file, 'a');
+			fwrite($f, $str);
+			fclose($f);
+		}
+		else if (!$file)
+		{
+			echo $str;
+		}
+	}
+
 	private function parseSnac($snac)
 	{
 		if (strlen($snac) > 10)
 		{
-			return unpack('ntype/nsubtype/nflag/Nrequest_id/a*data', $snac);
+			$return = unpack('ntype/nsubtype/nflag/Nrequest_id', $snac);
+			$return['data'] = substr($snac, 10);
+			return $return;
 		}
 		$this->error = 'Error: Broken SNAC can`t parse';
 		return false;
@@ -487,7 +638,7 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		$data = substr($data, 2);
 		for ($i = 0; $i < $classes; $i++)
 		{
-			if (strlen($data)>35)
+			if (strlen($data)>=35)
 			{
 				$rate = unpack('nrate/Nwindow/Nclear/Nalert/Nlimit/Ndisconect/Ncurrent/Nmax/Ntime/cstate', $data);
 				$this->rates[array_shift($rate)] = $rate;
@@ -533,7 +684,7 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 			}
 			return $snac;
 		}
-		$this->error = 'Error: Can`t create CNAC rates groups empty';
+		$this->error = 'Error: Can`t create SNAC rates groups empty';
 		return false;
 	}
 
@@ -603,6 +754,9 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		return $this->__header(0x02, 0x02);
 	}
 
+	/**
+	 * @todo 
+	 */
 	protected function ServerLocationRights($data)
 	{
 		return true;
@@ -613,14 +767,141 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		return $this->__header(0x02, 0x04).$this->packTLV(0x05, implode($this->capabilities).$this->user_agent_capability[$this->agent], 'H*');
 	}
 
+	protected function OscarError($data)
+	{
+		$error = unpack('ncode', $data);
+		if (isset($this->oscar_errors[$error['code']])) {
+			$error['error'] = $this->oscar_errors[$error['code']];
+		}
+		return $this->createResponse("error", $error);
+	}
+
 	protected function ClientBuddylistRights($args)
 	{
 		return $this->__header(0x03, 0x02);
 	}
 
+	/**
+	 * @todo 
+	 */
 	protected function ServerBuddylistRights($data)
 	{
 		return true;
+	}
+
+	/**
+	 * Add contact to list
+	 *
+	 * @deprecated 
+	 * @param array $args
+	 * @return string binary
+	 */
+	protected function ClientBuddyListAdd($args)
+	{
+		extract($args);
+		$data = '';
+		if(is_array($uins)) {
+			foreach ($uins as $id) {
+				$data .= pack('c', strlen($id)).$id;
+				$this->contact_list[$id] = array();
+			}
+		}
+		else {
+			$data .= pack('c', strlen($uins)).$uins;
+			$this->contact_list[$uins] = array();
+		}
+		return $this->__header(0x03, 0x04).$data;
+	}
+
+	/**
+	 * Delete contact from list
+	 *
+	 * @deprecated 
+	 * @param array $args
+	 * @return string binary
+	 */
+	protected function ClientBuddyListDelete($args)
+	{
+		extract($args);
+		$data = '';
+		if(is_array($uins)) {
+			foreach ($uins as $uin) {
+				$data .= pack('c', strlen($uin)).$uin;
+				unset($this->contact_list[$uin]);
+			}
+		}
+		else {
+			$data .= pack('c', strlen($uins)).$uins;
+			unset($this->contact_list[$uins]);
+		}
+		return $this->__header(0x03, 0x05).$data;
+	}
+
+	protected function ServerUserOnline($data)
+	{
+		$response = $this->createResponse('useronline');
+		$info = unpack('clength', $data);
+		$uin = substr($data, 1, $info['length']);
+		$response['uin'] = $uin;
+		$data = substr($data, ($info['length']+1));
+		if (!isset($this->contact_list[$uin]))
+		{
+			return false;
+			// We dont need it!!!
+			//$this->contact_list[$uin] = array();
+		}
+		else
+		{
+			if(isset($this->contact_list[$uin]['status'])) 
+			{
+				$response['old_status'] = $this->contact_list[$uin]['status'];
+			}
+			unset($this->contact_list[$uin]['ip']);
+			unset($this->contact_list[$uin]['online_time']);
+			unset($this->contact_list[$uin]['signon_time']);
+			unset($this->contact_list[$uin]['member_since']);
+			unset($this->contact_list[$uin]['substatus']);
+			unset($this->contact_list[$uin]['status']);
+		}
+		$info = unpack('nwarning_level/nsize', $data);
+		$data = substr($data, 4);
+		for ($i = 0; $i < $info['size']; $i++)
+		{
+			$tlv = $this->unpackTLV($data);
+			switch ($tlv['type']) {
+				case 0x000A:
+					$this->contact_list[$uin]['ip'] = long2ip($tlv['data']);
+					break;
+				case 0x000F:
+					$this->contact_list[$uin]['online_time'] = $tlv['data'];
+					break;
+				case 0x0003:
+					$this->contact_list[$uin]['signon_time'] = $tlv['data'];
+					break;
+				case 0x0005:
+					$this->contact_list[$uin]['member_since'] = $tlv['data'];
+					break;
+				case 0x0006:
+					$status = unpack('nsubstatus/nstatus', $tlv['data']);
+					$this->contact_list[$uin]['substatus'] = array_search($status['substatus'], $this->substatuses);
+					$this->contact_list[$uin]['status'] = array_search($status['status'], $this->statuses);
+					$response['status'] = $this->contact_list[$uin]['status'];
+					break;
+				case 0x0001: // todo: user class
+				case 0x000C: // todo: dc info
+				case 0x000D: // todo: user capabilities
+				case 0x0011: // todo: time updated
+				case 0x0019: // todo: new style capabilities
+				case 0x001D: // todo: user icon id & hash
+				break;
+			}
+		}
+		return $response;
+	}
+
+	protected function ServerUserOffline($data)
+	{
+		return $this->ServerUserOnline($data);
 	}
 
 	protected function ClientIBCMRights()
@@ -628,6 +909,9 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		return $this->__header(0x04, 0x04);
 	}
 
+	/**
+	 * @todo 
+	 */
 	protected function ServerIBCMRights($data)
 	{
 		return true;
@@ -646,7 +930,7 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		$uin_size     = strlen($uin);
 		$message_size = strlen($message);
 
-		$cookie = microtime();
+		$cookie = microtime(true);
 		$snack = $this->__header(0x04, 0x06).pack('dnca*', $cookie, $this->ibcm_type, $uin_size, $uin);
 
 		switch ($this->ibcm_type)
@@ -665,7 +949,7 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 				break;
 		}
 
-		return $snack;
+		return array('return' => $cookie, 'data' => $snack);
 	}
 
 	/**
@@ -678,7 +962,6 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	{
 		if (strlen($data))
 		{
-			$return = array();
 			$msg = unpack('dcookie/nchannel/cnamesize', $data);
 			$data = substr($data, 11);
 
@@ -701,30 +984,106 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 							$subtlvs = $this->splitTLVsToArray($data, true);
 							if (isset($subtlvs[0x0101]))
 							{
+								$return['charset'] = unpack('nnumset/nsubset', substr($subtlvs[0x0101], 0, 4));
 								$return['message'] = substr($subtlvs[0x0101], 4);
+								$return = $this->createResponse('message', $return);
 							}
 						}
 						break;
 					case 5:
 						if ($return['channel'] == 2)
 						{
-							$msg = unpack('ntype/dcookie/a*capability', $data);
-							$return['type'] = $msg['type'];
+							if (strlen($data) < 26 )
+							{
+								// empty message
+								return false;
+							}
+							$msg = unpack('ntype/dcookie', $data);
+							$return['type']   = $msg['type'];
+							$return['cookie'] = $msg['cookie'];
+							$return['capability'] = bin2hex(substr($data, 10, 16));
+							$data = substr($data, 26);
 
-							$subtlvs = $this->splitTLVsToArray(substr($data, 26));
+							if ($return['capability'] != $this->message_capabilities['TLV2711'])
+							{
+								// todo: handel other
+								echo "Not supported message capability:".$return['capability']."\r\n";
+								$this->log('>>', $data, true);
+								return $return;
+							}
+
+							$subtlvs = $this->splitTLVsToArray($data);
+
 							foreach ($subtlvs as $type => $data)
 							{
 								switch ($type)
 								{
 									case 0x00004:
 										$return['external_ip'] = long2ip($data);
+									case 0x00005:
+										$return['listening_port'] = $data;
 										break;
 									case 0x2711:
-										if (strlen($data) > 52)
+										if (strlen($data) < 33)
 										{
-											$size = unpack('vsize', substr($data, 51, 2));
-											$return['rtf'] = substr($data, 53, $size['size']);
-											$return['message'] = RTF::Text($return['rtf']);
+											// empty message
+											echo "Empty?\r\n";
+											$this->log('>>', $data, true);
+											return $return;
+										}
+										$meta = unpack('vuId/vversion', substr($data, 0, 4));
+										$return['version'] = $meta['version'];
+										$return['capability2'] = bin2hex(substr($data, 4, 16));
+										$meta = unpack('vuId/vcookie2', substr($data, 29, 4));
+										$return['cookie2'] = $meta['cookie2'];
+										$data = substr($data, 33);
+
+										switch ($return['capability2']) {
+											// MESSAGE
+											case $this->message_capabilities['MESSAGE']:
+												if (strlen($data) < 20)
+												{
+													echo "Empty message?\r\n";
+													$this->log('>>', $data, true);
+													return $return;
+												}
+												//empty zerous
+												$meta = unpack('Ctype/Cflag/vstatus/vpriority/vsize', substr($data, 12, 8));
+												$data = substr($data, 20);
+												switch ($meta['type'])
+												{
+													// Chat request message
+													case 0x02:
+														$return['debugmsg'] = 'deprecated?';
+														$return = $this->createResponse('chatrequest', $return);
+														break;
+														// File request / file ok message
+													case 0x03:
+														if ($return['type'] == 0 || $return['type'] = 1)
+														{
+															$return = $this->createResponse('filerequest', $return);
+														}
+														else if ($return['type'] == 2)
+														{
+															$return = $this->createResponse('fileresponse', $return);
+														}
+														else
+														{
+															//strange file message
+															$return['debugmsg'] = 'strange file message';
+															return $return;
+														}
+														break;
+														// Plugin message described by text string
+													case 0x1A:
+														return $this->parseServerGreeting($return, $meta, $data);
+														break;
+													default:
+														return $this->parseMessageTypes($return, $meta, $data);
+														break;
+												}
+												break;
+
 										}
 										break;
 								}
@@ -732,14 +1091,128 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 						}
 						break;
 					case 6:
-						$return['status']    = substr($data, 2);
-						$return['substatus'] = substr($data, 0, 2);
+						$status = unpack('nstatus/nsubstatus', $data);
+						$return['status']     = $status['status'];
+						$return['substatus']  = $status['substatus'];
 						break;
 				}
 			}
 			$this->writeFlap('ClientIBCMAck', $return);
 			return $return;
 		}
+		return false;
+	}
+
+	private function parseMessageTypes($return, $meta, $data)
+	{
+		if ($return['type'] == 2)
+		{
+			//todo: hendle message ack
+			return $return;
+		}
+
+		//todo: process 0xFE formatted
+
+		switch ($meta['type']) {
+			// Plain text (simple) message
+			case 0x01:
+				//todo: DC special check
+				$meta['trf'] = false;
+				if (strlen($data) > $meta['size']+ 36)
+				{
+					//rtf message
+					if (strpos($data, '{97B12751-243C-4334-AD22-D6ABF73F1492}') !== false)
+					{
+						$meta['trf'] = true;
+					}
+					//utf-8 message
+					if (strpos($data, '{0946134E-4C7F-11D1-8222-444553540000}') !== false)
+					{
+						$return['encoding'] = array('numset' => 'UTF-8', 'subset' => 0);
+					}
+					//  string(66) "  @  '!help'     ��� &   {0946134E-4C7F-11D1-8222-444553540000}"
+
+
+				}
+				$return['message'] = substr($data, 0, $meta['size']);
+				
+				if ($meta['trf'])
+				{
+					$return['rtf'] = $return['message'];
+					$return['message'] = RTF::Text($return['message']);
+				}
+				$return = $this->createResponse('message', $return);
+				break;
+				// URL message (0xFE formatted)
+			case 0x04:
+				$this->log('URL', $data);
+				$return['message'] = substr($data, 0, $meta['size']);
+				$return = $this->createResponse('urlmessage', $return);
+				break;
+				// Authorization request message (0xFE formatted)
+			case 0x06:
+				// Authorization denied message (0xFE formatted)
+			case 0x07:
+				// Authorization given message (empty)
+			case 0x08:
+				// Message from OSCAR server (0xFE formatted)
+			case 0x09:
+				// Web pager message (0xFE formatted)
+			case 0x0D:
+				// Email express message (0xFE formatted)
+			case 0x0E:
+				// Contact list message (0xFE formatted)
+			case 0x13:
+				$this->log($meta['type'].'>>', $data, true);
+				//$return['message'] = substr($data, 0, $meta['size']);
+				$return = array_merge($return, $meta);
+				break;
+				// "You-were-added" message (0xFE formatted)
+			case 0x0C:
+				$return = $this->createResponse('youadded', $return);
+				break;
+				// Auto away message
+			case 0xE8:
+				$return['message'] = substr($data, 0, $meta['size']);
+				$return = $this->createResponse('autoaway', $return);
+				break;
+				// Auto occupied message
+			case 0xE9:
+				$return['message'] = substr($data, 0, $meta['size']);
+				$return = $this->createResponse('autooccupied', $return);
+				break;
+				// Auto not available message
+			case 0xEA:
+				$return['message'] = substr($data, 0, $meta['size']);
+				$return = $this->createResponse('autona', $return);
+				break;
+				// Auto do not disturb message
+			case 0xEB:
+				$return['message'] = substr($data, 0, $meta['size']);
+				$return = $this->createResponse('autodnd', $return);
+				break;
+				// Auto free for chat message
+			case 0xEC:
+				$return['message'] = substr($data, 0, $meta['size']);
+				$return = $this->createResponse('autofreeforchat', $return);
+				break;
+		}
+		return $return;
+	}
+
+	private function parseServerGreeting($return, $meta, $data)
+	{
+		if (strlen($data) < 24)
+		{
+			$return['debugmsg'] = 'to short to indificate plugin type';
+			$this->log('SG', $data, true);
+			return $return;
+		}
+
+		//		$plugin = unpack()
+		//
+		//
+		//		$return['capability'] = bin2hex(substr($data, 10, 16));
 		return false;
 	}
 
@@ -778,15 +1251,38 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		}
 	}
 
+	protected function ServerIBCMAck($data)
+	{
+		if (strlen($data) > 11) {
+			$msg = unpack('did/nchannel/cuin', $data);
+			$msg['uin'] = substr($data, 11, $msg['uin']);
+			return $this->createResponse('accepted', $msg);
+		}
+		$this->error = 'ServerIBCMAck: too short';
+		return false;
+	}
+
 
 	protected function ClientPrivicyRights()
 	{
 		return $this->__header(0x09, 0x02);
 	}
 
+	/**
+	 * @todo 
+	 */
 	protected function ServerPrivicyRights($data)
 	{
 		return true;
+	}
+
+	protected function ServerSSIError($data)
+	{
+		$response = unpack('ncode', substr($data, 0, 2));
+		if (isset($this->oscar_errors[$response['code']])) {
+			$response['error'] = $this->oscar_errors[$response['code']];
+		}
+		return $this->createResponse('error', $response);
 	}
 
 	protected function ClientSSIRights($args)
@@ -794,9 +1290,127 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 		return $this->__header(0x13, 0x02);
 	}
 
+	/**
+	 * @todo 
+	 */
 	protected function ServerSSIRights($data)
 	{
 		return true;
+	}
+
+	protected function ClientSSI($args)
+	{
+		return $this->__header(0x13, 0x04);
+	}
+
+	protected function ServerSSI($data, $flag = 0)
+	{
+		$this->error = "";
+		$header = unpack('cversion/nlength', $data);
+		$data = substr($data, 3);
+		for ($i=0; $i < $header['length']; $i++) {
+			if(strlen($data) > 10) {
+				$itemname = $this->unpackLV($data);
+				$props = unpack('ngroupID/nitemID/ntype/nsize', $data);
+				$data = substr($data, 8);
+				if(strlen($data) >= $props['size']) {
+					$props['tlvs'] = array();
+					if($props['size'] > 0) {
+						$props['tlvs'] = $this->splitTLVsToArray(substr($data, 0, $props['size']));
+						$data = substr($data, $props['size']);
+					}
+					switch ($props['type']) {
+						case 0x0000: //  	  Buddy record (name: uin for ICQ and screenname for AIM)
+						$this->contact_list[$itemname] = $this->convertContact($props);
+						break;
+						case 0x0001: //  	  Group record
+						$this->contact_list_groups[$itemname] = $this->convertGroup($props);
+						$this->contact_list_groups['all_childs_ids'] = array_merge($this->contact_list_groups['all_childs_ids'], $this->contact_list_groups[$itemname]['childs']);
+						case 0x0002: // 	  Permit record ("Allow" list in AIM, and "Visible" list in ICQ)
+						case 0x0003: // 	  Deny record ("Block" list in AIM, and "Invisible" list in ICQ)
+						case 0x0004: // 	  Permit/deny settings or/and bitmask of the AIM classes
+						case 0x0005: // 	  Presence info (if others can see your idle status, etc)
+						case 0x0009: // 	  Unknown. ICQ2k shortcut bar items ?
+						case 0x000E: // 	  Ignore list record.
+						case 0x000F: // 	  Last update date (name: "LastUpdateDate").
+						case 0x0010: // 	  Non-ICQ contact (to send SMS). Name: 1#EXT, 2#EXT, etc
+						case 0x0013: // 	  Item that contain roster import time (name: "Import time")
+						case 0x0014: // 	  Own icon (avatar) info. Name is an avatar id number as text
+						break;
+					}
+				}
+				else {
+					$this->error .= 'SSI extra data parsing error item #'.($i+1).' Name: '.$itemname."\r\n";
+				}
+			}
+			else {
+				$this->error .= 'SSI parsing error item #'.($i+1)."\r\n";
+			}
+		}
+		if ($flag == 0) {
+			$this->writeFlap('ClientSSIActivate');
+			return $this->createResponse("contactlist");
+		}
+		return true;
+	}
+
+	private function convertContact($item)
+	{
+		$contact = array();
+		if(is_array($item['tlvs']))
+		{
+			foreach ($item['tlvs'] as $key => $value) {
+				switch ($key) {
+					case 0x0066:
+						$contact['authorization'] = $value;
+						break;
+					case 0x0131:
+						$contact['name'] = $value;
+						break;
+					case 0x0137:
+						$contact['mail'] = $value;
+						break;
+					case 0x013A:
+						$contact['sms'] = $value;
+						break;
+					case 0x013C:
+						$contact['comment'] = $value;
+						break;
+					case 0x0145:
+						$contact['time'] = $value;
+						break;
+					default:
+						$contact[$key] = $value;
+						break;
+				}
+			}
+		}
+		$contact['id'] = $item['itemID'];
+		$contact['group'] = $item['groupID'];
+		return $contact;
+	}
+
+	private function convertGroup($item)
+	{
+		$group = array('childs' => array());
+		if(is_array($item['tlvs']))
+		{
+			foreach ($item['tlvs'] as $key => $value) {
+				switch ($key) {
+					case 0x00C8:
+						while (strlen($value) > 1)
+						{
+							$id = unpack('n', substr($value, 0, 2));
+							$group['childs'][] = $id[1];
+							$value = substr($value, 2);
+						}
+						break;
+				}
+			}
+		}
+		$group['id'] = $item['itemID'];
+		$group['group'] = $item['groupID'];
+		return $group;
 	}
 
 	/**
@@ -808,43 +1422,219 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	 */
 	protected function ClientSSICheckout($args)
 	{
-		return $this->__header(0x13, 0x02).pack('Nn', time(), 0x00);
+		extract($args);
+		if(!isset($time))
+		{
+			$time = '47877097';
+		}
+		return $this->__header(0x13, 0x05).pack('Nn', $time, 0x00);
 	}
 
 	protected function ClientSSIActivate($args)
 	{
-		return $this->__header(0x13, 0x02);
+		return $this->__header(0x13, 0x07);
 	}
 
+	protected function ClientSSIAdd($args)
+	{
+		extract($args);
+		$uins = isset($uins) ? $uins : array();
+		$data = '';
+		foreach ($uins as $uin => $name) {
+			if(!isset($this->contact_list[$uin]))
+			{
+				$data .= $this->packContact($uin, $name, array('id'=>$this->reservItemId($group), 'group' => $this->getGroupId($group)), true);
+			}
+		}
+		if (isset($group) && isset($parent))
+		{
+			$data .= $this->packGroup($group, $parent);
+		}
+		if (strlen($data) > 0) {
+			return $this->__header(0x13, 0x08).$data;
+		}
+		$this->error = "SSIAdd error: Nothing to add.";
+		return false;
+	}
+
+	private function reservItemId($group)
+	{
+		if (isset($this->contact_list_groups[$group]))
+		{
+			$id = 0;
+			while ($id++ < 65535)
+			{
+				if (!in_array($id, $this->contact_list_groups['all_childs_ids']))
+				{
+					$this->contact_list_groups['all_childs_ids'][] = $id;
+					return $id;
+				}
+			}
+			return $id;
+		}
+	}
+
+	private function getGroupId($name)
+	{
+		if (isset($this->contact_list_groups[$name]))
+		{
+			return $this->contact_list_groups[$name]['group'];
+		}
+		$this->error = 'getGroupId: No such group '.$name;
+		return false;
+	}
+
+	protected function ClientSSIDelete($args)
+	{
+		extract($args);
+		$uins = isset($uins) ? $uins : array();
+		$data = '';
+		foreach ($uins as $uin) {
+			if(isset($this->contact_list[$uin]))
+			{
+				$data .= $this->packContact($uin, false, $this->contact_list[$uin]);
+			}
+		}
+		if (isset($group) && isset($parent))
+		{
+			$data .= $this->packGroup($group, $parent);
+		}
+		if (strlen($data) > 0) {
+			return $this->__header(0x13, 0x0A).$data;
+		}
+		$this->error = "SSIDelete error: Nothing to delete.";
+		return false;
+	}
+
+	private function packContact($uin, $name = false, $contact = array(), $authorize = false)
+	{
+		//todo: groups
+		$tlv = $name ? $this->packTLV(0x0131, $name) : '';
+		if ($authorize) {
+			$tlv .= $this->packTLV(0x66);
+		}
+		$group = isset($contact['group']) ? $contact['group'] : 0;
+		$id    = isset($contact['id']) ? $contact['id'] : 0;
+		return $this->packLV($uin).pack('nnn', $group, $id, 0x00).$this->packLV($tlv);
+	}
+
+	private function packGroup($name, $parent = "")
+	{
+		$group = $this->getGroupId($parent);
+		$id    = $this->getGroupId($name) ? $this->getGroupId($name) : $this->reservItemId($parent);
+		return $this->packLV($name).pack('nnnn', $id, $group, 0x01, 0x00);
+	}
+
+	/**
+	 * @todo 
+	 */
 	protected function ServerSSIModificationDate($data)
 	{
 		return true;
 	}
 
+	/**
+	 * @todo errors to is
+	 */
+	protected function ServerSSIAck($data)
+	{
+		$errors = array('errors' => array());
+		while (strlen($data) > 1) {
+			$error = unpack('ncode', $data);
+			if (isset($this->oscar_buddy_errors[$error['code']])) {
+				$error['error'] = $this->oscar_buddy_errors[$error['code']];
+			}
+			$data = substr($data, 2);
+			$errors['errors'][] = $error;
+		}
+		return $errors;
+	}
+
+	protected function ClientSSIEditStart()
+	{
+		return $this->__header(0x13, 0x11);
+	}
+
+	protected function ClientSSIEditEnd()
+	{
+		$this->contact_list = array();
+		$this->contact_list_groups = array('all_childs_ids' => array(0));
+		$this->writeFlap('ClientSSICheckout');
+		return $this->__header(0x13, 0x12);
+	}
+
+	protected function ClientSSIAuthRequest($args)
+	{
+		extract($args);
+		$reason = isset($reason) ? $reason : "";
+		return $this->__header(0x13, 0x18).$this->packLV($uin, 'c').$this->packLV($reason).pack('n', 0x0);
+	}
+
+	protected function ServerSSIAuthRequest($data)
+	{
+		$response = $this->createResponse('authrequest');
+		$response['from'] = $this->unpackLV($data, 1);
+		$response['reason'] = $this->unpackLV($data);
+		return $response;
+	}
+
+	protected function ClientSSIAuthResponse($args)
+	{
+		extract($args);
+		$reason = isset($reason) ? $reason : "";
+		$allow  = isset($allow) ? $allow : false;
+		return $this->__header(0x13, 0x1a).$this->packLV($uin, 'c').pack('c', $allow).$this->packLV($reason);
+	}
+
+	protected function ServerSSIAuthResponse($data)
+	{
+		$response = $this->createResponse('authresponse');
+		$response['from'] = $this->unpackLV($data, 1);
+		$granted = unpack('c', substr($data, 0, 1));
+		$response['granted'] = $granted[1];
+		$data = substr($data, 1);
+		$response['reason'] = $this->unpackLV($data);
+		return $response;
+	}
+
+	protected function ServerSSIYouAdded($data)
+	{
+		$response = $this->createResponse('youadded');
+		$response['from'] = $this->unpackLV($data, 1);
+		return $response;
+	}
+
+	private function createResponse($type = "message", $response = array())
+	{
+		$response['type'] = $type;
+		return $response;
+	}
+
 	protected function ClientMetaData($args)
 	{
+		static $sequence = 1;
 		extract($args);
 		$ret = $this->__header(0x15, 0x02);
 		switch ($type)
 		{
 			case 'offline': // 003C
-			$ret .= $this->packTLV(0x01, pack('vVvv', 0x08, $uin, 0x3C, 0x02));
+			$ret .= $this->packTLV(0x01, pack('vVvv', 0x08, $uin, 0x3C, $sequence));
 			break;
 			case 'delete_offline': // 003E
-			$ret .= $this->packTLV(0x01, pack('vVvv', 0x08, $uin, 0x3E, 0x00));
+			$ret .= $this->packTLV(0x01, pack('vVvv', 0x08, $uin, 0x3E, $sequence));
 			break;
 			default: // todo: 07D0
-			//$ret .= $this->packTLV(0x01, pack('vVvv', 0x00, $uin, 0x07D0, 0x00));
+			$pack = pack('VvvvV', $uin, 0x07D0, $sequence, 0x04BA, $uinsearch); //CLI_SHORTINFO_REQUEST
+			$ret .= $this->packTLV(0x01, pack('v', strlen($pack)).$pack);
 			break;
 		}
-		return $ret;
+		return array('return' => $sequence++, 'data' => $ret);
 	}
 
 	protected function ServerMetaData($data)
 	{
 		if (strlen($data))
 		{
-			$return = array();
 			$data = substr($data, 4);
 
 			if (strlen($data) > 0)
@@ -855,14 +1645,50 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 				{
 					case 0x41: // Offline message
 					$msg = unpack('Vfrom/vyear/Cmonth/Cday/Chour/Cminute/Cmsgtype/Cflag/nlength/a*message', $msg['data']);
+					$this->createResponse("offlinemessage", $msg);
 					break;
 					case 0x42: // End of offline messages
 					$this->writeFlap('ClientMetaData', array('uin' => $msg['myuin'], 'type' => 'delete_offline'));
 					$msg = true;
 					break;
-					default: // todo: 07DA
-					//$ret .= $this->packTLV(0x01, pack('vVvv', 0x00, $uin, 0x07DA, 0x00));
+					case 0x07DA: // SRV_META_INFO_REPLY
+					$msg = array_merge($msg, unpack('vid', substr($data, 8, 10)));
+					$msg1 = unpack('vsubtype', $msg['data']);
+					$msg['data'] = substr($msg['data'], 2);
+					switch ($msg1['subtype']) {
+						case 0x0104: //Short info
+						$msg1 = unpack('csuccess', $msg['data']);
+						$msg['data'] = substr($msg['data'], 1);
+						$msg['type'] = 'shortinfo';
+						if($msg1['success'] == 0x0A)
+						{
+							$size = unpack('v', $msg['data']);
+							$msg['nick'] = substr($msg['data'], 2, $size[1]-1);
+							$msg['data'] = substr($msg['data'], $size[1]+2);
+							$size = unpack('v', $msg['data']);
+							$msg['firstname'] = substr($msg['data'], 2, $size[1]-1);
+							$msg['data'] = substr($msg['data'], $size[1]+2);
+							$size = unpack('v', $msg['data']);
+							$msg['lastname'] = substr($msg['data'], 2, $size[1]-1);
+							$msg['data'] = substr($msg['data'], $size[1]+2);
+							$size = unpack('v', $msg['data']);
+							$msg['email'] = substr($msg['data'], 2, $size[1]-1);
+							$msg['data'] = substr($msg['data'], $size[1]+2);
+							//								$this->log("Short info data:", $msg['data']);
+							$msg1 = unpack('cauthorization/cunknown/cgender', $msg['data']);
+							unset($msg['data']);
+							$msg = array_merge($msg, $msg1);
+							$this->createResponse("shortinfo", $msg);
+						}
+						break;
+						default:
+							return false;
+							break;
+					}
 					break;
+					default:
+						return false;
+						break;
 				}
 			}
 			return $msg;
@@ -881,14 +1707,27 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	{
 		return substr($data, 2);
 	}
-
+    
 	protected function ClientMd5Login($args)
-	{
-		extract($args);
-		$password = pack('H*', md5($password));
-		$password = pack('H*', md5($authkey.$password.'AOL Instant Messenger (SM)'));
-		return $this->__header(0x17, 0x02).$this->packTLV(0x01, $uin).$this->packTLV(0x25, $password).$this->packTLV(0x4C, '').$this->packTLV(0x03, 'ICQBasic').$this->packTLV(0x16, 0x010A, 'n').$this->packTLV(0x17, 0x0014, 'n').$this->packTLV(0x18, 0x34, 'n').$this->packTLV(0x19, 0x00, 'n').$this->packTLV(0x1A, 0x0BB8, 'n').$this->packTLV(0x14, 0x0000043D, 'N').$this->packTLV(0x0F, 'en').$this->packTLV(0x0E, 'us');
-	}
+    {
+        extract($args);
+        $password = pack('H*', md5($password));
+        $password = pack('H*', md5($authkey.$password.'AOL Instant Messenger (SM)'));
+        return $this->__header(0x17, 0x02).
+                $this->packTLV(0x01, $uin).
+                $this->packTLV(0x25, $password).
+                $this->packTLV(0x4C, '').
+                $this->packTLV(0x03, 'ICQ Client').
+                $this->packTLV(0x16, 0x010A, 'n').
+                $this->packTLV(0x17, 0x0006, 'n').
+                $this->packTLV(0x18, 0x00, 'n').
+                $this->packTLV(0x19, 0x00, 'n').
+                $this->packTLV(0x1A, 0x1B67, 'n').
+                $this->packTLV(0x14, 0x00007535, 'N').
+                $this->packTLV(0x0F, 'ru').
+                $this->packTLV(0x0E, 'ru').
+                $this->packTLV(0x94, 0x00, 'c');
+    }
 
 	protected function ServerMd5LoginReply($data)
 	{
@@ -906,18 +1745,6 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Dump SNAC to file
-	 *
-	 * @param unknown_type $str
-	 */
-	private function dump($str)
-	{
-		$f = fopen('dump', 'a');
-		fwrite($f, $str);
-		fclose($f);
 	}
 
 	/**
@@ -961,7 +1788,7 @@ class WebIcqPro_SNAC extends WebIcqPro_TLV {
 	 * @param string $value
 	 * @return boolean
 	 */
-	protected function setMessageType($value = 'plain_text')
+	protected function setMessageType($value = 'rtf')
 	{
 		switch (strtolower($value))
 		{
@@ -1072,7 +1899,12 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
 		if ($this->socet)
 		{
 			stream_set_timeout($this->socet, $this->timeout_second, $this->timeout_msecond);
-			return fwrite($this->socet, $data);
+			if (!fwrite($this->socet, $data)) {
+				$this->socet = false;
+				$this->error = 'Error: Server close connection';
+				return false;
+			}
+			return true;
 		}
 		$this->error = 'Error: Not connected';
 		return false;
@@ -1082,9 +1914,24 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
 	{
 		if (method_exists($this, $name))
 		{
-			return $this->socetWrite($this->packFlap($this->$name($args)));
+			$response = $this->$name($args);
+			if (is_array($response) && isset($response['return']) && isset($response['data']))
+			{
+				$flap = $this->packFlap($response['data']);
+				$this->log(">> ".$name, $flap);
+				if ($this->socetWrite($flap))
+				{
+					return $response['return'];
+				}
+				return false;
+			}
+			elseif ($response)
+			{
+				$flap = $this->packFlap($response);
+				$this->log(">> ".$name, $flap);
+				return $this->socetWrite($flap);
+			}
 		}
-
 		return false;
 	}
 
@@ -1110,10 +1957,10 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
 
 	protected function readFlap($name = false)
 	{
-		$flap = $this->socetRead(6);
-		if ($flap)
+		$data = $this->socetRead(6);
+		if ($data)
 		{
-			$flap = unpack('ccommand/cchanel/nsequence/nsize', $flap);
+			$flap = unpack('ccommand/cchanel/nsequence/nsize', $data);
 			if ($flap['chanel'] == 4)
 			{
 				$this->error = 'Notice: Server close connection';
@@ -1128,11 +1975,13 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
 					$snac = $this->analizeSnac($flap['data']);
 					if (isset($snac['callback']) && $snac['callback'] == $name)
 					{
-						return $this->$name($snac['data']);
+						$this->log("<< ".$snac['callback'].'('.dechex($snac['type']).', '.dechex($snac['subtype']).')', $data.$flap['data']);
+						return $this->$name($snac['data'], $snac['flag']);
 					}
 					elseif(isset($snac['callback']))
 					{
-						$this->$snac['callback']($snac['data']);
+						$this->log("<< ".$snac['callback'].'('.dechex($snac['type']).', '.dechex($snac['subtype']).')', $data.$flap['data']);
+						$this->$snac['callback']($snac['data'], $snac['flag']);
 						$this->error = 'Warning: Wrong server response "'.$name.'" expected but SNAC('.dechex($snac['type']).', '.dechex($snac['subtype']).') received';
 					}
 					return false;
@@ -1145,10 +1994,10 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
 
 	protected function readSocket()
 	{
-		$flap = $this->socetRead(6);
-		if ($flap)
+		$data = $this->socetRead(6);
+		if ($data)
 		{
-			$flap = unpack('ccommand/cchanel/nsequence/nsize', $flap);
+			$flap = unpack('ccommand/cchanel/nsequence/nsize', $data);
 			if ($flap['chanel'] == 4)
 			{
 				$this->error = 'Notice: Server close connection';
@@ -1161,7 +2010,12 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
 				$snac = $this->analizeSnac($flap['data']);
 				if (isset($snac['callback']))
 				{
-					return $this->$snac['callback']($snac['data']);
+					$this->log("<< ".$snac['callback'].' ('.dechex($snac['type']).'x'.dechex($snac['subtype']).')', $data.$flap['data']);
+					return $this->$snac['callback']($snac['data'], $snac['flag']);
+				}
+				else
+				{
+					$this->log('<< Unknown SNAC: '.dechex($snac['type']).'x'.dechex($snac['subtype']), $data.$flap['data']);
 				}
 			}
 		}
@@ -1206,6 +2060,7 @@ class WebIcqPro_Socet extends WebIcqPro_FLAP
  */
 class WebIcqPro extends WebIcqPro_Socet {
 
+	private $uin;
 
 	/**
 	 * Constructor for WebIcqPro class
@@ -1229,6 +2084,7 @@ class WebIcqPro extends WebIcqPro_Socet {
 	 */
 	public function connect($uin, $pass)
 	{
+		$this->uin = str_replace('-', '', $uin);
 		if ($this->socet)
 		{
 			$this->error = 'Error: Connection already opened';
@@ -1241,13 +2097,12 @@ class WebIcqPro extends WebIcqPro_Socet {
 			if ($this->helloFlap($flap))
 			{
 				$this->socetWrite($this->helloFlap());
-				$uin = str_replace('-', '', $uin);
 				$this->channel = 0x02;
-				$this->writeFlap('ClientMd5Request', array('uin' => $uin));
+				$this->writeFlap('ClientMd5Request', array('uin' => $this->uin));
 				$authkey = $this->readFlap('ServerMd5Response');
 				if ($authkey)
 				{
-					$this->writeFlap('ClientMd5Login', array('uin' => $uin, 'password' => $pass, 'authkey' => $authkey));
+					$this->writeFlap('ClientMd5Login', array('uin' => $this->uin, 'password' => $pass, 'authkey' => $authkey));
 					$reconect = $this->readFlap('ServerMd5LoginReply');
 					$this->disconnect();
 					if ($reconect)
@@ -1272,7 +2127,7 @@ class WebIcqPro extends WebIcqPro_Socet {
 									$this->writeFlap('ClientRatesAck');
 								}
 								$this->writeFlap('ClientSSIRights');
-								$this->writeFlap('ClientSSICheckout'); // todo: nuber of items send
+								$this->writeFlap('ClientSSICheckout');
 								$this->writeFlap('ClientLocationRights');
 								$this->writeFlap('ClientBuddylistRights');
 								$this->writeFlap('ClientIBCMRights');
@@ -1306,7 +2161,7 @@ class WebIcqPro extends WebIcqPro_Socet {
 	 */
 	public function activateStatusNotifications()
 	{
-		return $this->writeFlap('ClientSSIActivate');
+		return $this->writeFlap('ClientSSI');
 	}
 
 	/**
@@ -1414,9 +2269,23 @@ class WebIcqPro extends WebIcqPro_Socet {
 	 * @param string $uin
 	 * @return boolean
 	 */
-	public function activateOfflineMessages($uin)
+	public function activateOfflineMessages()
 	{
-		return $this->writeFlap('ClientMetaData', array('uin' => $uin, 'type' => 'offline'));
+		return $this->writeFlap('ClientMetaData', array('uin' => $this->uin, 'type' => 'offline'));
+	}
+
+	/**
+	 * Get contact short info.
+	 * 
+	 *
+	 * @see readMessage
+	 * @param string $uin
+	 * @return boolean
+	 */
+	public function getShortInfo($uin)
+	{
+		$uin = str_replace('-', '', $uin);
+		return $this->writeFlap('ClientMetaData', array('uin' => $this->uin, 'uinsearch' => $uin, 'type' => 'shortinfo'));
 	}
 
 	/**
@@ -1447,6 +2316,7 @@ class WebIcqPro extends WebIcqPro_Socet {
 	 */
 	public function sendMessage($uin, $message)
 	{
+		$uin = str_replace('-', '', $uin);
 		return $this->writeFlap('ClientIBCM', array('uin' => $uin, 'message' => $message));
 	}
 
@@ -1479,6 +2349,112 @@ class WebIcqPro extends WebIcqPro_Socet {
 		}
 		$this->error = 'Warning: setOption name: "'.$name.'" unknown';
 		return false;
+	}
+
+	/**
+	 * Return list of contacts
+	 * 
+	 * @return array
+	 */
+	public function getContactList()
+	{
+		return $this->contact_list;
+	}
+
+	/**
+	 * Return list of contacts groups
+	 * 
+	 * @return array
+	 */
+	public function getContactListGroups()
+	{
+		$groups = array_keys($this->contact_list_groups);
+		unset($groups['all_childs_ids']);
+		return $groups;
+	}
+
+	/**
+	 * Add uins to list of contacts. First argument is group name. Ather uins to add.
+	 * Also posible to add with custom name:
+	 * 
+	 * addContact("Buddies", array('uin' => UIN_TO_ADD, 'name' => "Custom name"), ...)
+	 * 
+	 * @todo errors handling
+	 * 
+	 * @param mixed list of uins
+	 * @return boolean
+	 */
+	public function addContact()
+	{
+		$uin = array();
+		$args = func_get_args();
+		$group = array_shift($args);
+		foreach ($args as $id) {
+			if(is_array($id))
+			{
+				$uin[str_replace('-', '', $id['uin'])] = $id['name'];
+			}
+			else
+			{
+				$uin[str_replace('-', '', $id)] = false;
+			}
+		}
+		if(count($uin) > 0) {
+			$this->writeFlap('ClientSSIEditStart');
+			$this->writeFlap('ClientSSIAdd', array('uins' => $uin, 'group' => $group));
+			$this->writeFlap('ClientSSIEditEnd');
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Delete uins from list of contacts.
+	 * deleteContact(UIN_TO_DELETE, ...) 
+	 * 
+	 * @todo errors handling
+	 * @param mixed list of uins
+	 * @return boolean
+	 */
+	public function deleteContact()
+	{
+		$uin = array();
+		foreach (func_get_args() as $id) {
+			$uin[] = str_replace('-', '', $id);
+		}
+		if(count($uin) > 0) {
+			$this->writeFlap('ClientSSIEditStart');
+			$this->writeFlap('ClientSSIDelete', array('uins' => $uin));
+			$this->writeFlap('ClientSSIEditEnd');
+			return true;
+		}
+		return true;
+	}
+
+	public function addContactGroup($name, $parent = "")
+	{
+		$this->writeFlap('ClientSSIEditStart');
+		$this->writeFlap('ClientSSIAdd', array('group' => $name, 'parent' => $parent));
+		$this->writeFlap('ClientSSIEditEnd');
+		return true;
+	}
+
+	public function deleteContactGroup($name, $parent)
+	{
+		$this->writeFlap('ClientSSIEditStart');
+		$this->writeFlap('ClientSSIDelete', array('group' => $name, 'parent' => $parent));
+		$this->writeFlap('ClientSSIEditEnd');
+		return true;
+	}
+
+	public function getAuthorization($uin, $reason='')
+	{
+		return $this->writeFlap('ClientSSIAuthRequest', array('uin' => $uin, 'reason' => $reason));
+	}
+
+	public function setAuthorization($uin, $granted=true, $reason='')
+	{
+		return $this->writeFlap('ClientSSIAuthResponse', array('uin' => $uin, 'reason' => $reason, 'allow' => $granted));
 	}
 }
 ?>
