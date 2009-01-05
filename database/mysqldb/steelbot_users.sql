@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS `@users` (
+`user` INT UNSIGNED NOT NULL ,
+`access` TINYINT NOT NULL ,
+`registered` INT UNSIGNED NOT NULL ,
+PRIMARY KEY ( `user` ) 
+) ENGINE = MYISAM ;
