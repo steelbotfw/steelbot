@@ -1,1 +1,0 @@
-CREATE TABLE @data ( user int,  dkey str,  data str,  last_edit int )
