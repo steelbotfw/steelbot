@@ -1,0 +1,45 @@
+html,body {
+    font-family: Verdana;
+    font-size: 10pt;
+    color: #333333;
+}
+
+h1 {
+    color: #000000;
+    
+}
+
+h2 {
+    color: #000000;
+    border-bottom: 1px solid #000000;
+}
+
+tt {
+    color: green;
+}
+
+a:hover {
+    color: #ff0000;
+}
+
+.section1 {
+    padding-left: 10pt;
+    
+}
+
+.section2 {
+    padding-left: 40pt;
+}
+
+.code {
+    border: 1px dashed #555555;
+    background-color: #cfdfcf;
+    color: #000000;
+    padding: 10pt;
+}
+
+.menu {
+    border: 1px dotted #565656;
+    background-color: #bfbfbf;
+    padding: 5pt;
+}

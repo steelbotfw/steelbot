@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" href="style.css" type="text/css" />
+    <title>SteelBot - Установка</title>
+</head>
+
+<body>
+ 
+    
+ 
+    <table align="center" width="70%">
+        <tr>
+            <td>            
+   
+            <center class="menu">
+        <a href="s1.html">Назад</a> |
+        <a href="index.html">Содержание</a> |
+        <a href="s3.html">Дальше</a>
+    </center>
+            
+<div align="center">
+    <h2 style="border:0px;">Установка SteelBot</h2>
+</div>
+
+<div align="justify" id="p1">    
+    <h2>Что нужно SteelBot для работы</h2>
+
+    SteelBot отличается от обычных php скриптов тем, что он не имеет никакого 
+    отношения к web. Скрипт выполняется в CLI интерпретатором php, и для работы 
+    SteelBot требуется выделенный сервер (или виртуальный выделенный сервер), 
+    на котором будет работать бот. Многие пытаются установить бота на 
+    обыконовенный web-хостинг, на котором бот почти наверняка не запустится. 
+    И хотя известны случаи успешного запуска через web, этот способ крайне не 
+    рекомендуется - запуск через браузер не дает возможности посмотреть вывод 
+    логов бота, бот работает нестабильно, к тому же на хостинге часто запрещены 
+    запуски скриптов на длительное время.
+    <br><br>
+    Итак, что нужно для бота: <br>
+    
+    <div class="section1">
+    <li>Выделенный сервер или виртуальный выделенный сервер(VDS)</li>
+    <li>PHP версии не ниже 5</li>
+    <li>Расширение PHP <a href="http://ru2.php.net/mbstring">mbstring</a> </li>
+    <li>Расширение PHP <a href="http://ru2.php.net/iconv">iconv</a> </li>
+    <li>Включенные сокеты и разрешенные внешние соединения</li>
+    <li>Возможность устанавливать бесконечное время работы php-скрипта (max_execution_time = 0)
+    </li>
+    </div>
+    <br> Если все это у вас есть, то можно приступать к установке SteelBot. 
+
+</div>
+
+<div align="justify" id="p2">    
+    <h2>Установка на Unix-based систему</h2> 
+    Для начала скачиваем установочный архив SteelBot в нужную нам директорию.<br>
+    Распаковываем архив и переходим в распакованную директорию steelbot (в данном примере рассмотрена установка SteelBot 1.4)
+    <pre class="code">
+    
+ $ tar -zxvf steelbot-1.4-utf-8.tar.gz
+ $ cd steelbot
+    </pre>
+    
+    После этого в текущей директории появятся файлы бота. Чтобы бот запустился с настройками по умолчанию, достаточно в любом текстовом редакторе поменять только 3 опции в файле config.php - UIN бота, пароль от UINa, и UIN администратора, с которого должен осуществляться контроль над ботом.
+    <br>
+    <small>Примечание: текстовый редактор должен поддерживать кодировку utf-8</small>
+    <br>
+    <br>
+    В приведенном ниже примере бот настроен на работу на номере 123456, и доступ к его администрированию
+    возможен с номера 321742. Если требуется установить несколько номеров администратора, то их можно ввести через запятую.
+    <pre class="code">
+    
+  $cfg = array(
+  			  //UIN
+   			  'bot_uin'       => 123456,
+    
+   			  //пароль от уина
+   			  'bot_password'  => 'password',
+    
+   			  // номер администратора бота (или несколько номеров через запятую,
+   			  // например array(321742)
+   			  'master_uin'    => array( 321742 ),
+    </pre>
+    
+    После этого сохраните файл, и бот готов к запуску.
+    
+    Команда для запуска, например, такая:
+    <pre class="code">
+    
+ $ php bot.php &>./log.txt &
+    </pre>
+    
+    Здесь мы запускаем бота в фоновом режиме, чтобы при закрытии консоли он не завершился, и весь вывод консоли перенаправляем в файл log.txt
+    <br>
+    <small>Бот также сам ведет запись логов в директории logs, но туда не попадут предупреждения от интерпретатора PHP</small>
+    
+    Через некоторое время (5-20 секунд) бот должен выйти в онлайн. Если этого не произошло, в указанном лог-файле можно посмотреть ход запуска бота и возникшие при этом ошибки.
+</div>
+
+<div align="justify" id="p3">    
+    <h2>Установка на Windows</h2>
+</div>           
+    Здесь приведена установка бота на локальную windows-машину.
+    Руководство по установке бота на выделенный сервер под управлением Windows 
+    появится в следующих версиях руководства :) 
+    <br><br>
+    
+    Эта инструкция по установке также доступна <a href="http://steelbot.net/wiki/doku.php/articles:install_win">онлайн</a>.
+    
+<p>Идем на <a href="http://php.net/downloads.php" class="urlextern" title="http://php.net/downloads.php"  rel="nofollow">официальный сайт PHP в раздел downloads</a>, скачиваем архив с последней версией <acronym title="Hypertext Preprocessor">PHP</acronym>, <acronym title="Hypertext Preprocessor">PHP</acronym> zip package (первая ссылка под заголовком Windows Binaries).
+</p>
+
+<p>
+Распаковываем скачанный архив в нужный каталог (Например, C:\php)
+</p>
+
+<p>
+<a href="http://sourceforge.net/project/showfiles.php?group_id=233399" class="urlextern" title="http://sourceforge.net/project/showfiles.php?group_id=233399"  rel="nofollow">Скачиваем SteelBot c сайта sourceforge</a>
+</p>
+
+<p>
+Распаковываем бота в каталог с ранее установленным <acronym title="Hypertext Preprocessor">PHP</acronym> (например, в каталог C:\php\steelbot)
+</p>
+
+<p>
+Настраиваем бота
+</p>
+
+<p>
+Далее заходим в командную строку (жмем Win+R). В командной строке переходим в директорию с php
+</p>
+<pre class="code">
+ 
+ cd C:\php
+ </pre>
+
+<p>
+
+Оказываемся в директории с php. Далее пишем
+</p>
+<pre class="code">
+
+ php steelbot\bot.php
+ </pre>
+
+<p>
+
+где steelbot\bot.php - путь к скрипту бота (абсолютный либо относительный).
+</p>
+
+<p>
+Если все прошло удачно, бот запускается и начинает выводит в консоль информацию.
+Признаком выхода бота в онлайн является строка в консоли:
+</p>
+<pre class="code">
+
+ Connecting to server [ UIN ]... 
+  ...
+ Connected. Ready to work.
+ 
+</pre> 
+
+<center class="menu">
+        <a href="s1.html">Назад</a> |
+        <a href="index.html">Содержание</a> |
+        <a href="s3.html">Дальше: администрирование SteelBot</a>
+    </center>
+
+</td>
+        </tr>
+    </table>
+</body>
+
+</html>
