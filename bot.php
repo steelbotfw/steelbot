@@ -4,13 +4,13 @@
  * 
  * http://steelbot.net
  * 
- * @version  2.1.2
+ * @version  3
  * @author   N3x^0r ( mailto: n3xorus@gmail.com )
  * @license  GPL v. 2
  * 
  */
 
-define('STEELBOT_VERSION', '2.1.2');
+define('STEELBOT_VERSION', '3.0.0');
 if (!defined('STEELBOT_DIR'))
 	define('STEELBOT_DIR', dirname(__FILE__)); 
 error_reporting(E_ALL);
@@ -22,6 +22,10 @@ define('LOG_LEVEL_NOTICE', 3);
 define('LOG_LEVEL_WARNING', 2);
 define('LOG_LEVEL_ERROR', 1);
 define('LOG_LEVEL_NONE', 0);
+
+if (!isset($argv)) {
+	$argv = array(__FILE__);
+}
 
 function __autoload($classname) {
 	$name = mb_strtolower($classname);
@@ -79,8 +83,7 @@ if ($cfg['db.use_config']) {
 
 require_once STEELBOT_DIR.'/include/i18n.php';
 
-
-if (@in_array('-test', $argv ) ) {
+if (@in_array('-test', $argv ) || S::bot()->config['bot']['test']) {
     S::logger()->log("'-test' option enabled. Exiting.");
     die();
 }

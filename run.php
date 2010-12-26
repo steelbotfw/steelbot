@@ -10,10 +10,6 @@ $config = array(
 		'database' => 'steelbot21'
 	),
 	'proto' => array(
-		//'engine' => 'icq',
-		//'uin' => '37751377',
-		
-		//'password' => '$+Ce=(Yc'
 		'engine' => 'jabber',
 		'jid' => 'test@test.ru',
 		'password' => '123'

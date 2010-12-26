@@ -9,7 +9,7 @@ class PluginManager extends SComponent {
 	public function __construct($bot) {
 		parent::__construct($bot);
 
-        $this->plugins = $this->FindPlugins(STEEBOT_DIR.'/plugins');
+        $this->plugins = $this->FindPlugins(STEELBOT_DIR.'/plugins');
         $userplugins = $this->FindPlugins($bot->config['bot']['plugin_dir']);
         $this->plugins = S::mergeArray($this->plugins, $userplugins);
         var_dump($this->plugins);       

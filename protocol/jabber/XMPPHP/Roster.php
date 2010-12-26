@@ -118,7 +118,12 @@ class Roster {
 	 * @param string $status
 	*/
 	public function setPresence($presence, $priority, $show, $status) {
-		list($jid, $resource) = explode("/", $presence);
+		if (strpos($presence, '/')) {
+			list($jid, $resource) = explode("/", $presence);
+		} else {
+			$jid = $presence;
+			$resource = '';
+		}
 		if ($show != 'unavailable') {
 			if (!$this->isContact($jid)) {
 				$this->addContact($jid, 'not-in-roster');
