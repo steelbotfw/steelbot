@@ -2,19 +2,17 @@
 
 
 $dict = array(NULL,
-    'help_notfound', //1
+    'help_notfound',
     'nohelp',
     'helpcommands',
-
+    'cmdnoaccess',
+	'cmdnotfound',
+	'errfunc'
 );
 
 for ($i=1; $i<count($dict); $i++) {
     define( 'LNG_'.strtoupper($dict[$i]),  $i);
 }
-
-
-
-
 
 function LNG($key) {
     $translated = SteelBot::$lng->GetTranslate( $key );

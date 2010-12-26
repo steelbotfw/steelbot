@@ -1,8 +1,9 @@
 <?php
 
-class Event extends SComponent {
+class Event{
     
-    private /**
+    private 
+			/**
 		     * event code
 			 */
             $code, 
@@ -35,12 +36,19 @@ class Event extends SComponent {
     }
    
     public function __set($name, $value) {
-        //if (array_key_exists($name, $this->params)) {
+        if (array_key_exists($name, $this->params)) {
             $this->params[$name] = $value;
+            
+            /**
+             * Костыль для сохранения актуального состояния SteelBot::$content
+             */
+            if ($this->code == EVENT_MSG_RECEIVED && $name=='content') {   
+                SteelBot::$content = $value; 
+            }
            
-        //} else {
-        //    throw new Exception("Event parameter '$name' does not exist",0);
-        //}
+        } else {
+            throw new Exception("Event parameter '$name' does not exist",0);
+        }
     }
    
     public function GetCountHandlers() {

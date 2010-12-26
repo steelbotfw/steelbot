@@ -1,156 +1,128 @@
 <?php
 /**
- * SteelBot - модульный ICQ PHP бот.
+ * SteelBot - модульный PHP бот.
  * 
  * http://steelbot.net
  * 
- * @version  1.4
+ * @version  2.1.2
  * @author   N3x^0r ( mailto: n3xorus@gmail.com )
  * @license  GPL v. 2
  * 
  */
 
-
-if ( isset($_SERVER['HTTP_HOST']) ) {
-    define('STEELBOT_CLI', false);
-    switch (@$_REQUEST['web']) {
-        case 'skip':
-             echo '<pre>';
-            break;
-            
-        default: header("Location: web/index.php");
-            exit;    
-    }
-} else {
-    define('STEELBOT_CLI', true);
-}
-
-define('STEELBOT_MAJOR_VER', 1);
-define('STEELBOT_MINOR_VER', 4);
-
-define('REG_CMD_OK', 1);
-define('REG_CMD_ALREADY_DEFINED', 2);
-define('STEELBOT_DIR', dirname(__FILE__)); 
-
+define('STEELBOT_VERSION', '2.1.2');
+if (!defined('STEELBOT_DIR'))
+	define('STEELBOT_DIR', dirname(__FILE__)); 
 error_reporting(E_ALL);
 
-echo 'SteelBot v. '.STEELBOT_MAJOR_VER.'.'.STEELBOT_MINOR_VER."\n\n";
+echo 'SteelBot v. '.STEELBOT_VERSION."\n\n";
 
-include_once STEELBOT_DIR.'/include/classes/slog.class.php';
-require_once STEELBOT_DIR.'/include/interfaces/isteelbotdb.interface.php';
-require_once STEELBOT_DIR.'/include/classes/steelbotcore.class.php';
-require_once STEELBOT_DIR.'/include/classes/steelbot.class.php';
+define('LOG_LEVEL_INFO', 4);
+define('LOG_LEVEL_NOTICE', 3);
+define('LOG_LEVEL_WARNING', 2);
+define('LOG_LEVEL_ERROR', 1);
+define('LOG_LEVEL_NONE', 0);
 
-
-$i = @array_search('-cfg', $argv);
-if ($i++) {
-    echo "Loading {$argv[$i]} ...";
-    require_once($argv[$i]);
-    echo " OK\n";
-} else {
-    echo "Loading config.php ...";
-    require_once(dirname(__FILE__).'/config.php');
-    echo " OK\n";
+function __autoload($classname) {
+	$name = mb_strtolower($classname);
+	if (file_exists(STEELBOT_DIR."/include/classes/$name.class.php")) {
+		include STEELBOT_DIR."/include/classes/$name.class.php";
+		return true;
+	} else {
+		return false;
+	}
 }
-SteelBot::$cfg = $cfg;
-slog::add('***',"Log started at ".date("r"));
 
-
-// password check for web 
-if ( !STEELBOT_CLI ) {
-    if ( !empty($cfg['web_password']) && $_REQUEST['password'] != $cfg['web_password']) {
-        die('Incorrect web password. Please, edit "web_password" option to set password for web access');
-    }
-    ignore_user_abort(true);
+// interfaces
+foreach (glob(STEELBOT_DIR.'/include/interfaces/*.interface.php') as $in) {
+	include_once $in;
 }
+
+if (!isset($config)) {
+	die('Configuration is not specified');
+}
+
+S::init($config);
+
+// common functions
+require_once STEELBOT_DIR.'/include/common.php';
 
 // checking system
-require_once('include/system.check.php');
-CheckSystem();
+if ( !@array_search('-skipcheck', $argv) ) {
+	require_once('include/system.check.php');
+	CheckSystem();
+}
+
+
+
+/*
+if ($cfg['db.use_config']) {
+	foreach ($cfg as $key=>$value) {
+		if (SteelBot::DbIgnoredOption($key)) {
+		    echo "Ignoring loading option from database: $key\n";
+			continue;
+		}
+		try {
+			$value = SteelBot::GetOption($key);
+			$cfg[$key] = $value;
+		} catch (BotException $e) {
+			switch ($e->getCode()) {
+				case BotException::UNKNOWN_CONFIG_OPTION:
+					SteelBot::SetOption($key, $value);
+					break;
+				default:
+					throw $e;
+			}
+		}
+	}
+} */
+
+require_once STEELBOT_DIR.'/include/i18n.php';
+
+
 if (@in_array('-test', $argv ) ) {
+    S::logger()->log("'-test' option enabled. Exiting.");
     die();
 }
 
-foreach (glob(dirname(__FILE__)."/include/const/*.php") as $file) {
-    include_once $file;
-}
-
-require_once(dirname(__FILE__)."/include/common.php");
-
-// interfaces
-
-require_once(dirname(__FILE__)."/include/interfaces/isteelbotprotocol.interface.php");
-
-
-//other classes
-foreach ( glob( dirname(__FILE__)."/include/classes/*.class.php" ) as $class) {
-    include_once($class);
-}
-
-
-
-
-require_once(dirname(__FILE__)."/protocol/proto.class.php");
-require_once(dirname(__FILE__)."/database/db.php");
 
 set_time_limit(0);
 error_reporting(E_ALL ^ E_NOTICE);
 
-require_once(dirname(__FILE__)."/include/i18n.php");
-SteelBot::Init($cfg);
+S::bot()->eventManager->RegisterEventHandler(EVENT_MSG_RECEIVED, array(S::bot(),'Parse'))
+->RegisterEventHandler(EVENT_MSG_UNHANDLED, array(S::bot(), 'MsgUnhandledHandler'))
+//->RegisterEventHandler(EVENT_MSG_UNHANDLED, array(SteelBot::$lng, 'RestorePrimaryLang'), 10)
+//->RegisterEventHandler(EVENT_MSG_HANDLED, array(SteelBot::$lng, 'RestorePrimaryLang'), 10)
+->RegisterEventHandler(EVENT_EXIT, array(S::bot()->proto, 'Disconnect'));
 
-
-flush();
-
-register_shutdown_function(array('slog', 'save'));
-
-if (SteelBot::$cfg['lockfile_enabled']) {
-    register_shutdown_function(array('SteelBot', 'DeleteLockFile'));
-}
-
-
-slog::add('***',"Plugins count: ".count(SteelBot::$plugins));
-slog::add('***', "Standard commands count: ".count(SteelBot::$cmdlist));
 
 $connect_attempts = 0; //попытки подключения
-
-while ($connect_attempts++ < SteelBot::$cfg['connect_attempts']) {
+S::bot()->eventManager->EventRun( new Event(EVENT_BOT_LOADED) );
+while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
    flush();
-   if (SteelBot::$cfg['lockfile_enabled']) {
-       slog::add('***',"Checking for lockfile ... ");
-       if ( SteelBot::CheckLockFile() ) {
-           slog::add('***',"LOCK enabled. You must delete lock file to enable connecting to server");
-           die();
-       }
-       slog::result("OK");
-   }
    
-   slog::add('***',"Connecting to server [ ".SteelBot::$cfg['bot_uin']." ]... "); 
-   if ( SteelBot::Connect() ) {
-         $connect_attempts = 0;	
-         if (SteelBot::$cfg['lockfile_enabled']) {     
-	       SteelBot::CreateLockFile();
-         }
-	     @include SteelBot::$cfg['autoinclude_file'];
-	     slog::add('***', "Ready to work.");
- 	     while (SteelBot::Connected()) {	       		      
- 		      $time = time();
- 		      if ($time > SteelBotCore::$next_timer) {
- 		          SteelBotCore::TimerRun($time);
- 		      }
- 		      SteelBot::ParseMessage(); 		      		      	
+   S::logger()->log("Connecting to server  ... ");
+   if ( S::bot()->proto->Connect() ) {
+         $connect_attempts = 0;		   
+	     S::logger()->log("Ready to work.");
+ 	     while (S::bot()->proto->Connected()) {	       		      
+ 		      S::bot()->timerManager->checkTimers();
+ 		      $event = S::bot()->proto->GetMessage();
+              if ($event===false) {
+                  usleep((int)S::bot()->config['bot']['delaylisten']*1000000);  
+              } else {
+                  S::bot()->eventManager->EventRun($event);
+              }
+              echo '.';   		      	
  	     } 
  	              
     } else {
-        slog::add('***', "Connection error: ".SteelBot::Error() );
+        S::logger()->log("Connection error: ".SteelBot::Error() );
     }
     
-    if (SteelBot::$cfg['lockfile_enabled']) {
-        SteelBot::DeleteLockFile();
-    }
-    slog::add('***', "Disconnected." );
+    S::logger()->log("Disconnected.");
     sleep(10);
 }
-
+S::logger()->log('Bot stopped');
 echo "\nBot stopped.\n";  
   
