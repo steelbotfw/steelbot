@@ -142,11 +142,6 @@ function GetAlias() {
     return $this->msgEvent->alias;
 }     
 
-
-function MsgUnhandledHandler() {
-	SteelBot::Msg( LNG(LNG_CMDNOTFOUND) );
-}
-
 /**
  * @desc Регистрирует пользовательскую команду в системе.
  *
@@ -420,7 +415,12 @@ function Parse($event) {
 	                break;
 	        }
 	    }
-	}    
+	} else {
+        $this->eventManager->EventRun(new Event(EVENT_MSG_UNHANDLED, array(
+            'alias' => $alias,
+            'params' => $params
+        )));
+    }    
 	return true;    
 }
 /*

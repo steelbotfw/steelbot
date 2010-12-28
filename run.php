@@ -7,7 +7,7 @@ $config = array(
 	'db' => array(
 		'engine' => 'mysqldb',
 		'password' => '123456',
-		'database' => 'steelbot21'
+		'database' => 'steelbot'
 	),
 	'proto' => array(
 		'engine' => 'jabber',
@@ -16,6 +16,7 @@ $config = array(
 	),
 	'plugins' => array(
 		'default'
+		'help'
 		)
 );
 

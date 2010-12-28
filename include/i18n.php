@@ -15,6 +15,7 @@ for ($i=1; $i<count($dict); $i++) {
 }
 
 function LNG($key) {
+    throw new BotException(1,1);
     $translated = SteelBot::$lng->GetTranslate( $key );
     if (func_num_args() > 1) {
         $params = func_get_args();

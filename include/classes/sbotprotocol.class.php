@@ -5,8 +5,7 @@
  * 
  * http://steelbot.net
  * 
- * @author N3x^0r
- * @version 1.1.0
+ * @author nexor
  * 
  */
 
