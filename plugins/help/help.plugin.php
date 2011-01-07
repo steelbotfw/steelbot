@@ -13,6 +13,7 @@
 //SteelBot::AddDependence('steelbot', '2.1.2', 'bot');
 S::bot()->RegisterCmd( SteelBotHelp::$helpAlias, array('SteelBotHelp', 'help'), 1, 'help - вывести помощь');
 S::bot()->eventManager->RegisterEventHandler(EVENT_MSG_UNHANDLED, array('SteelBotHelp', 'notfound'));
+
 class SteelBotHelp {
 
     public static $helpAlias = 'help';
@@ -21,12 +22,13 @@ class SteelBotHelp {
 		if (empty($params)) {
 				$helpstr = array();
 				foreach ($cm->getAliases() as $alias) {
-					//$cmdaccess = $cmd->GetAccess();
+                    $cmd = $cm->getCommandByAlias($alias);
+                    $cmdaccess = $cmd->GetAccess();
 
 					// Показываем команду, только если она подходит пользователю по уровню доступа,
 					// и не является администраторской (для администраторских команд свой хелпер)
 					//if ( ($cmdaccess <= SteelBot::GetUserAccess()) && ($cmdaccess < 100) ) {
-						$helpstr[] = $cm->getCommandByAlias($alias)->GetHelp(BotCommand::HELP_SHORT, $alias);
+						$helpstr[] = $cmd->GetHelp(BotCommand::HELP_SHORT);
 					//}
 				}	
 				S::bot()->Msg( "Доступные команды: \n".implode("\n",$helpstr) );

@@ -12,7 +12,6 @@ class PluginManager extends SComponent {
         $this->plugins = $this->FindPlugins(STEELBOT_DIR.'/plugins');
         $userplugins = $this->FindPlugins($bot->config['bot']['plugin_dir']);
         $this->plugins = S::mergeArray($this->plugins, $userplugins);
-        var_dump($this->plugins);       
 	}
     
     public function getPluginInstance() {
@@ -46,13 +45,13 @@ class PluginManager extends SComponent {
                 $result += $this->FindPlugins($fileName);
             } elseif (is_file($fileName) && substr($fileName, -11) == '.plugin.php') {
                 $name = str_replace('.plugin.php', '', basename($fileName));
-                $result[$name] = $fileName;
+                $result[$name] = realpath($fileName);
             }
         }
         return $result;
     }
 
-    function LoadPlugin($filename, $params) {
+    public function LoadPlugin($filename, $params) {
         S::logger()->log("Loading $filename...");
         $name = str_replace('.plugin.php', '', basename($filename) );
         

@@ -12,7 +12,7 @@ class SComponent {
 	}
 
 	public function __get($property) {
-		$method = 'get'.$property;
+		$method = 'get'.ucfirst($property);
 		if (method_exists($this, $method)) {
 			return $this->$method();
 		}

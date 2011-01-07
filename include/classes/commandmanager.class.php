@@ -13,15 +13,25 @@ class CommandManager extends SComponent {
         return array_keys($this->aliases);
     }
 
+    public function getCommands() {
+        return array_unique(array_values($this->commands));
+    }
+
 	public function RegisterCommand($command) {
-		$pluginName = S::bot()->pluginmanager->AddCommand($command);		
+		$pluginName = S::bot()->pluginmanager->AddCommand($command);
+        $dbAccess = S::bot()->db->getCmdAccess($pluginName, $command->name);
+        if ($dbAccess >= 0) {
+            $command->SetAccess($dbAccess);
+        } else {
+            S::bot()->db->setCmdAccess($pluginName, $command->name, $command->GetAccess());
+        }		
         $this->commands[$pluginName][$command->name] = $command;
         return $this;
 	}
 
     public function CreateAlias($command, $alias) {
         if (array_key_exists($alias, $this->aliases)) {
-            throw new BotException("Alias '$alias' already exists");
+            throw new BotException("Alias '$alias' already exists", 0);
         }
         S::logger()->log("Creating alias $alias");
         $this->aliases[$alias] = $command;

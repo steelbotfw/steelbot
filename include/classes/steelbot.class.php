@@ -499,7 +499,7 @@ function ParseMessage() {
  *
  */
 function DoExit() {
-    S::logger()->log( "Exit requested");
+    S::logger()->log("Exit requested");
 
     /* ## if (self::$cfg['save_actual_timers']) {
         self::SaveTimers();

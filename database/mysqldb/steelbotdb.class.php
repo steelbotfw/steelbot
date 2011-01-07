@@ -218,7 +218,6 @@ class SteelBotDB extends SDatabase  {
         $query = "SELECT id FROM ".$this->table_prefix."users WHERE user='$user'";
         $exists = $this->QueryValue($query);
         return $exists;
-
     }
 
     /**
