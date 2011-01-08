@@ -28,11 +28,11 @@ class AdminCommand extends BotCommand {
         return $this->_prefix;
     }
 
-    public function getHelp($inlist=0) {
+    public function getHelp($inlist=0, $alias) {
         if ($inlist==BotCommand::HELP_SHORT) {
-            return $this->helpstr_short;
+            return str_replace('{alias}', $alias, $this->helpstr_short);
         } elseif ($inlist==BotCommand::HELP_FULL) {
-            return $this->helpstr_full;
+            return str_replace('{alias}', $alias, $this->helpstr_full);
         }
     }
 

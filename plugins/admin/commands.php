@@ -1,81 +1,131 @@
 <?php
-/*
+
 class HelpAdminCommand extends AdminCommand {
-    static function CmdHelp($cmd) {
-        if ($cmd[0] == self::$firstchar) {
-            $cmd = substr($cmd, 1);
-        } 
-        if ( empty($cmd) ) { //show list of all commands
-            $list = array_keys(self::$commands);
-            sort($list);
-            $commands = self::$firstchar.implode(', '.self::$firstchar, $list );
-               
-            SteelBot::Msg( self::_('cmdhelp_1', $commands) );
-               
-        } elseif (array_key_exists($cmd, self::$commands)) { // show help
-            SteelBot::Msg(self::$commands[$cmd]['helpstr']);
-            
-        } else {    //command not found
-            SteelBot::Msg(self::_('cmdhelp_2', self::$firstchar, $cmd) ); 
-            
+    protected $helpstr_full = "{alias} - просмотр справки по администраторским командам.
+Варианты:
+{alias} - вывести список администраторских команд
+{alias} command - вывести подробную справку по администраторской команде \"command\"",
+              $helpstr_short = "{alias} - список команд администрирования";
+
+    public function __construct() {
+        parent::__construct('help');
+    }
+
+    public function Execute($params, &$msgevent) {
+        parent::Execute($params, $msgevent);
+        if (empty($params)) {
+            $list = array();
+            foreach (S::bot()->commandManager->getAliases() as $alias) {
+                $command = S::bot()->commandManager->getCommandByAlias($alias);
+                if ($command->GetAccess() == S::bot()->config['bot']['user.max_access']) { 
+                    $list[] = $command->GetHelp(BotCommand::HELP_SHORT, $alias);
+                }
+            }
+            $msg = "Доступные команды администрирования: \n".implode("\n", $list);
+            S::bot()->Msg($msg);
+        } elseif ($command = S::bot()->commandManager->getCommandByAlias($params)) {
+            if ($command->GetAccess() < S::bot()->config['bot']['user.max_access']) {
+                S::bot()->Msg("Команда '$params' существует, но не является администраторской.");
+            } else {
+                $msg = $command->GetHelp(BotCommand::HELP_FULL, $params);
+                S::bot()->Msg($msg);
+            }
+        } else {
+            S::bot()->Msg("Справка для '$params' не найдена");
         }
     }
 }
+
+class EvalAdminCommand extends AdminCommand {
+    protected $helpstr_full = "{alias} code - интерпретирует заданный php код и отсылает результат вывода.",
+              $helpstr_short = "{alias} - интерпретирует php код";
+
+    public function __construct() {
+        parent::__construct('eval');
+    }
+        
+    public function Execute($params, &$msgevent) {
+        parent::Execute($params, $msgevent);
+        ob_start();
+        eval($params);
+        $output = ob_get_flush();
+        if (empty($output)) {
+            $output = "Код выполнен без вывода.";
+        }
+        S::bot()->Msg($output);
+    }
+}
+
+
 class CmdAdminCommand extends AdminCommand {
-    static function CmdCmd($p1) {    
-    if (empty($p1)) {
-        SteelBot::Msg(self::_('cmdcmd_1')." access|alias|remove|rename ");
-        return;
+    protected $helpstr_full = "{alias} - управление командами.\nВарианты:
+{alias} - список возможных параметров
+{alias} list - список всех установленных команд
+{alias} list <plugin> - список всех команд из плагина <plugin>",
+              $helpstr_short = "{alias} - управление командами";
+
+    public function __construct() {
+        parent::__construct('cmd');
     }
 
-    list($subcommand, $p1) = explode(' ', $p1, 2);
+    public function Execute($params, &$msgevent) {
+        parent::Execute($params, &$msgevent);        
+        if (empty($params)) {
+            S::Bot()->Msg("Синтаксис: ".$msgevent->alias." list");
+        } else {
+            list($subcmd, $subparams) = explode(' ', $params, 2);
+            switch ($subcmd) {
+                case 'list': $this->ParamList($subparams);
+                    break;
+                    /*
+                case 'access': $this->ParamAccess($subparams);
+                    break;
+                case 'alias': $this->ParamAlias($subparams);
+                    break; */
+                default:
+                    S::bot()->Msg("Неверный параметр: '$subcmd'. Для получения списка возможных параметров наберите ".$msgevent->alias." без кавычек");
+            }
+        }
+    }    
 
-
-    switch ($subcommand) {
-        case 'access':
-            self::AccessCmd($p1);
-            break;
-        case 'rename':
-            list($old, $new) = explode(' ', $p1,2);
-            self::RenameCmd($old, $new);
-            break;
-        case 'alias':
-            list($old, $new) = explode(' ', $p1,2);
-            self::AliasCmd($old, $new);
-            break;
-        case 'remove':
-            self::RemoveAlias($p1);
-            
-        case 'disable':
-            self::DisableCmd($p1, 'disable');    
-            break;
-            
-        case 'enable':
-            self::DisableCmd($p1, 'enable');
-            break;    
-
-        default: SteelBot::Msg(self::_('cmdcmd_1')." access|rename|alias|remove|disable|enable ");
+    public function ParamList($params) {
+        if (empty($params)) {
+            $msg ="Установленные команды во всех плагинах:\n";
+            $commands = array();
+            $count = 0;
+            foreach (S::bot()->pluginManager->pluginInstances as $pluginName=>$pluginObject) {
+                $commands[] = "$pluginName/";
+                foreach ($pluginObject->commands as $commandName=>$commandObject) {
+                    $commands[] = "    $commandName";
+                    $count++;
+                }
+            }
+            $msg .= implode("\n", $commands)."\n\nВсего команд: $count";
+            S::bot()->Msg($msg);
+        } elseif ($plugin = S::bot()->pluginManager->getPluginInstance($params)) {
+            $msg = "Команды в плагине $params:\n";
+            $count = 0;
+            foreach ($plugin->commands as $commandName=>$commandObject) {
+                $msg .= "    $commandName\n";
+                $count++;
+            }
+            $msg .= "Всего команд: $count";
+            S::bot()->Msg($msg);
+        } else {
+            S::bot()->Msg("Плагин $params не найден");
+        }            
     }
-}
 
-private static function RenameCmd($old_alias, $new_alias) {
-    if (empty($new_alias)) {
-        SteelBot::Msg( self::_('cmdcmd_1').' old_alias new_alias' );
-    } else {
-        self::AliasCmd($old_alias, $new_alias);
-        unset( SteelBot::$aliases[$old_alias] );
-        SteelBot::Msg(self::_('cmdcmd_3', $old_alias, $new_alias) );
+    public function ParamAccess($params) {
+
     }
-}
 
-private static function DisableCmd($alias, $method) {
-    if (array_key_exists($alias, SteelBot::$aliases)) { 
-        SteelBot::$aliases[$alias]->$method();
-        SteelBot::Msg(self::_('cmdcmd_'.($method=='disable'?'5':'6'), $alias));
-    } else {
-        SteelBot::Msg(self::_('cmdcmd_7', $alias));
-    }       
-}
+    public function ParamAlias($params) {
+
+    }
+    /*
+
+
 
 private static function AliasCmd($alias, $new_alias) {
     if (empty($new_alias)) {
@@ -129,34 +179,15 @@ private static function AccessCmd($p1) {
     } else {
         SteelBot::Msg(self::_('cmdcmdaccess_5'));
     }
-} 
-
 } */
 
-class EvalAdminCommand extends AdminCommand {
-    
-    protected $helpstr_full = '.eval - интерпретирует php код',
-              $helpstr_short = '.eval - интерпретирует php код';
+} 
 
-    public function __construct() {
-        parent::__construct('eval');
-    }
-        
-    public function Execute($params, &$msgevent) {
-        parent::Execute($params, $msgevent);
-        ob_start();
-        eval($params);
-        $output = ob_get_flush();
-        if (empty($output)) {
-            $output = "Выполнено.";
-        }
-        S::bot()->Msg($output);
-    }
-}
+
            
 class ExitAdminCommand extends AdminCommand {
-    protected $helpstr_full = '.exit - завершение работы бота',
-              $helpstr_short = '.exit - завершение работы бота';
+    protected $helpstr_full = "{alias} - завершение работы бота",
+              $helpstr_short = "{alias} - завершение работы бота";
 
     public function __construct() {
         parent::__construct('exit');
@@ -473,8 +504,8 @@ class InfoAdminCommand extends AdminCommand {
 }} */
 
 return array(
-    //'HelpAdminCommand',
-    //'CmdAdminCommand',
+    'HelpAdminCommand',
+    'CmdAdminCommand',
     'EvalAdminCommand',            
     'ExitAdminCommand',
     /*'OptAdminCommand',

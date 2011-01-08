@@ -28,7 +28,7 @@ class SteelBotHelp {
 					// Показываем команду, только если она подходит пользователю по уровню доступа,
 					// и не является администраторской (для администраторских команд свой хелпер)
 					//if ( ($cmdaccess <= SteelBot::GetUserAccess()) && ($cmdaccess < 100) ) {
-						$helpstr[] = $cmd->GetHelp(BotCommand::HELP_SHORT);
+						$helpstr[] = $cmd->GetHelp(BotCommand::HELP_SHORT, $alias);
 					//}
 				}	
 				S::bot()->Msg( "Доступные команды: \n".implode("\n",$helpstr) );

@@ -14,19 +14,27 @@ class PluginManager extends SComponent {
         $this->plugins = S::mergeArray($this->plugins, $userplugins);
 	}
     
-    public function getPluginInstance() {
-        if ($this->_current_plugin != null) {
-            return $this->_current_plugin;
+    public function getPluginInstance($name = null) {
+        if (is_null($name)) {
+            if ($this->_current_plugin != null) {
+                return $this->_current_plugin;
+            } else {
+                $backtrace = debug_backtrace();
+                $name = str_replace('.plugin.php', '', $backtrace[2]['file']);
+                $name = array_shift(explode('.', $name, 2));
+                if ($this->PluginLoaded($name)) {
+                    return $this->instances[$name];
+                } else {
+                    return null;
+                }            
+            }
         } else {
-            $backtrace = debug_backtrace();
-            $name = str_replace('.plugin.php', '', $backtrace[2]['file']);
-            $name = array_shift(explode('.', $name, 2));
-            if ($this->PluginLoaded($name)) {
+            if (array_key_exists($name, $this->instances)) {
                 return $this->instances[$name];
             } else {
                 return null;
-            }            
-        }        
+            }
+        }
     }
 
     public function pluginAvailable($name) {
@@ -82,5 +90,9 @@ class PluginManager extends SComponent {
 
     function PluginLoaded($plugin) {
         return array_key_exists($plugin, $this->instances);
+    }
+
+    public function getPluginInstances() {
+        return $this->instances;
     }
 }

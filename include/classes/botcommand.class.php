@@ -73,14 +73,12 @@ class BotCommand extends SComponent {
         return $this->_case_sens;
     }
 
-    public function HelpHandlerFull($name) {
-        
-        return str_replace(array('%c'), array($name), $this->helpstr_full);
+    public function HelpHandlerFull($alias) {        
+        return str_replace(array('%c'), array($alias), $this->helpstr_full);
     }
 
-    public function HelpHandlerShort($name) {
-        var_dump($this->helpstr_short);
-        return str_replace(array('%c'),array($name), $this->helpstr_short);
+    public function HelpHandlerShort($alias) {
+        return str_replace(array('%c'),array($alias), $this->helpstr_short);
     }
     
     public function GetHelp($inlist=0, $alias = null) {

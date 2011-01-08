@@ -265,6 +265,9 @@ class SteelBotDB extends SDatabase  {
      * @return bool
      */
     public function SetCmdAccess($plugin, $command, $access) {
+        if (empty($command)) {
+            throw new db_exception("Command name must not be empty");
+        }
         $query = $this->FormatQuery(
 			"INSERT INTO ".$this->table_prefix."commands
                   SET access={access},
