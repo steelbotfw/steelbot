@@ -181,16 +181,21 @@ class SteelBotDB extends SDatabase  {
      * @return int - установленный уровень доступа
      */
     public function CreateUser($user, $access = -1) {
-        $registered = time();
         $user = self::EscapeString($user);
         if ($access < 0) {
 			$access = SteelBot::$cfg['user.default_access'];
 		}
 
         $access = (int)$access;
-        $query = "INSERT INTO ".$this->table_prefix."users (user, access, registered)
-                        VALUES ('$user', $access, $registered)";
-        $this->Query($query);
+        $this->EscapedQuery(
+            "INSERT INTO ".$this->table_prefix."users SET
+                user={user},
+                access={access}",
+            array(
+                'user' => $user,
+                'access' => $access
+            )
+        );
         return $access;
     }
 
@@ -201,8 +206,12 @@ class SteelBotDB extends SDatabase  {
      * @return bool
      */
     public function DeleteUser($user) {
-        $user = self::EscapeString($user);
-        $query = "DELETE FROM ".$this->table_prefix."users WHERE user='$user'";
+        $query = $this->formatQuery(
+            "DELETE FROM ".$this->table_prefix."users WHERE user={user}",
+            array(
+                'user' => $user
+            )
+        );
         $this->Query($query);
         return (!$this->errno);
     }
@@ -214,8 +223,10 @@ class SteelBotDB extends SDatabase  {
      * @return bool
      */
     public function UserExists($user) {
-        $user = self::EscapeString($user);
-        $query = "SELECT id FROM ".$this->table_prefix."users WHERE user='$user'";
+        $query = $this->formatQuery(
+            "SELECT id FROM ".$this->table_prefix."users WHERE user={user}",
+            array('user' => $user)
+        );
         $exists = $this->QueryValue($query);
         return $exists;
     }
@@ -245,10 +256,14 @@ class SteelBotDB extends SDatabase  {
      * @return bool
      */
     public function SetUserAccess($user, $access) {
-        $user = self::EscapeString($user);
-        $access = (int)$access;
-        $query = "UPDATE ".$this->table_prefix."users SET access=$access WHERE user='$user'";
-        $result = $this->Query($query);
+        $result = $this->EscapedQuery(
+            "UPDATE ".$this->table_prefix."users
+             SET access={access} WHERE user={user}",
+             array(
+                'access' => $access,
+                'user' => $user
+             )
+        );
         if (mysql_affected_rows($this->dbhandle)) {
             return true;
         } else {

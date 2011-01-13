@@ -351,8 +351,52 @@ class ReconnectAdminCommand extends AdminCommand {
     static function CmdReconnect() {
     SteelBot::Disconnect(); 
     SteelBot::Connect();  
-}}   
-class UseraccessAdminCommand extends AdminCommand {
+}}
+*/  
+class UserAdminCommand extends AdminCommand {
+
+    protected $helpstr_full = "{alias} - администрирование пользователей",
+              $helpstr_short = "{alias} - администрирование пользователей";
+
+    protected $_msgevent;
+
+    public function __construct() {
+        parent::__construct('user');
+    }
+    
+    public function Execute($params, &$msgevent) {
+        $this->_msgevent = $msgevent;
+        parent::Execute($params, $msgevent);
+        list($subcmd, $subparams) = explode(' ', $params, 2);
+
+        switch ($subcmd) {
+            case 'access':
+                $this->paramAccess($subparams);
+                break;
+            case 'view':
+                $this->paramView($subparams);
+                break;
+
+            default:
+                S::bot()->msg($msgevent->sender);
+        }
+        
+    }
+
+    public function paramAccess($subparams) {
+        if (strpos($subparams,' ')) {
+            list($userid, $set) = explode(' ', $subparams,2);
+        } else {
+            $userid = $subparams;
+        }
+        if (empty($set)) {
+            $access = S::bot()->getUserAccess($userid);
+            S::bot()->Msg("Уровень доступа пользователя $userid: $access");
+        } else {
+            S::bot()->setUserAccess($userid, $set);
+            S::bot()->Msg("Пользователю $userid установлен уровень доступа $set");
+        }
+    }
     static function CmdUserAccess($p1) {
     if (empty($p1)) {
         SteelBot::Msg(self::_('cmduseraccess_1', self::$firstchar));
@@ -373,7 +417,9 @@ class UseraccessAdminCommand extends AdminCommand {
         }
         
     }
-}}  
+}}
+
+/*  
 class TimerAdminCommand extends AdminCommand {
     static function CmdTimer($val) {
     list ($cmd, $param) = explode(' ',$val,2);
@@ -508,10 +554,11 @@ return array(
     'CmdAdminCommand',
     'EvalAdminCommand',            
     'ExitAdminCommand',
+    'UserAdminCommand',
     /*'OptAdminCommand',
     'PluginAdminCommand',
     'ReconnectAdminCommand',    
-    'UseraccessAdminCommand',   
+    '',   
     'TimerAdminCommand',
     'InfoAdminCommand'*/ 
 );

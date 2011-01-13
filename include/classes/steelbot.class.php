@@ -343,16 +343,16 @@ function DbIgnoredOption($option) {
 /**
  * @desc Установливает пользователю уровень доступа к боту
  *
- * @param string $user - jid пользователя
+ * @param string $user - id пользователя
  * @param int $level - уровень доступа от 1 до 100 
  * @return boolean
- *
+ */
 function SetUserAccess($user,$level) {
     if (!is_numeric($level) || $level > 100) {
         S::logger()->log("Incorrect users access level: $level");     
         return false;
     } else {
-        self::$database->SetUserAccess($user, $level);
+        $this->db->SetUserAccess($user, $level);
         return true;
     }    
 }
@@ -363,13 +363,13 @@ function SetUserAccess($user,$level) {
  *
  * @param  string $user
  * @return int
- *
-function GetUserAccess($user = false) {
-    $user = $user?$user:self::GetSender();
-    if (Proto::IsAdmin($user)) {
-        return SteelBot::$cfg['user.max_access'];
+ */
+function getUserAccess($user = false) {
+    $user = $user?$user:$this->msgEvent->sender;
+    if ($this->proto->IsAdmin($user)) {
+        return S::bot()->config['bot']['user.max_access'];
     } else {
-		return self::$database->GetUserAccess($user);
+		return $this->db->GetUserAccess($user);
     }
 }
 
