@@ -68,10 +68,10 @@ class BotCommand extends SComponent {
 
     public function Execute($params, &$msgevent) {
         //access check
-        /*
-        if ( $ac=SteelBot::GetUserAccess() < $this->access) {
+        
+        if ( $ac=S::bot()->GetUserAccess() < $this->access) {
             throw new BotException("{$this->name}: acces denied (user: $ac, cmd: {$this->access})", ERR_CMD_ACCESS);
-        } */
+        }
        
         foreach ($this->_callbackList as $callback) {
             if ( is_callable($callback) )  {

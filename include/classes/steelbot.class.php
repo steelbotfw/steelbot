@@ -406,7 +406,7 @@ function Parse($event) {
 	        switch ($e->getCode()) {
 	            case ERR_CMD_ACCESS:
                     S::logger()->log("ERR_CMD_ACCESS");
-	                //self::Msg( LNG(LNG_CMDNOACCESS) );
+	                self::Msg( $e->getMessage() );
 	                break;
 	                
 	            case ERR_FUNC:
