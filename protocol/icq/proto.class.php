@@ -40,7 +40,7 @@ public function __construct($bot) {
     }
     
     foreach ($adm as $uin) {
-        $this->masterAccounts[] = trim($uin);
+        $this->_masterAccounts[] = trim($uin);
     }
 }
 

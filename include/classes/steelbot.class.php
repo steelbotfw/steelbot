@@ -367,8 +367,10 @@ function SetUserAccess($user,$level) {
 function getUserAccess($user = false) {
     $user = $user?$user:$this->msgEvent->sender;
     if ($this->proto->IsAdmin($user)) {
+        echo "ADMIN\n";
         return S::bot()->config['bot']['user.max_access'];
     } else {
+        echo "USER\n";
 		return $this->db->GetUserAccess($user);
     }
 }
