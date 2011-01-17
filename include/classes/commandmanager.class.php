@@ -62,8 +62,17 @@ class CommandManager extends SComponent {
         $name = mb_strtolower($name, 'utf-8');
 	    if (!is_numeric($access)) {
 	         $access = 1;
-	    }	
-	    return new BotCommand($name, $func, $access, $helpstr);
+	    }
+        $command = new BotCommand($name);
+        $command->addCallbackFunc($func);
+        $command->setAccess($access);
+        $command->helpFull = $helpstr;
+        $command->helpShort = $name;
+        if ($createAlias) {
+            $this->createAlias($command, $name);
+        }
+        
+	    return $command;
     }	
 
 	

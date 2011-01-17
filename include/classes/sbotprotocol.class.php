@@ -71,10 +71,9 @@ abstract class SBotProtocol extends SComponent  {
      *
      * @param string $text - текст сообщения
      * @param string $to - ID человека в IM системе, на 
-     * который надо отсылать сообщение. Если передается
-     * false, то сообщение должно быть отправлено приславшему команду.          
+     * который надо отсылать сообщение.          
      */
-    abstract function Msg($text,$touin = false);
+    abstract function Msg($txt, $to);
 
     /**
      * Установить IM-статус бота.

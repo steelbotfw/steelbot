@@ -193,9 +193,7 @@ public function GetMessage() {
     return false;
 }
 
-
-
-public function Msg($txt,$to = false) {
+public function Msg($txt, $to) {
 	if (is_null($this->message_callback)) {
         $this->conn->message($to, $txt);
     } else {

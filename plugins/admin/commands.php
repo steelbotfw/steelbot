@@ -1,15 +1,12 @@
 <?php
 
 class HelpAdminCommand extends AdminCommand {
-    protected $helpstr_full = "{alias} - просмотр справки по администраторским командам.
+    public $helpFull = "{alias} - просмотр справки по администраторским командам.
 Варианты:
 {alias} - вывести список администраторских команд
 {alias} command - вывести подробную справку по администраторской команде \"command\"",
-              $helpstr_short = "{alias} - список команд администрирования";
-
-    public function __construct() {
-        parent::__construct('help');
-    }
+              $helpShort = "{alias} - список команд администрирования";
+    protected $_name = 'help';
 
     public function Execute($params, &$msgevent) {
         parent::Execute($params, $msgevent);
@@ -18,7 +15,7 @@ class HelpAdminCommand extends AdminCommand {
             foreach (S::bot()->commandManager->getAliases() as $alias) {
                 $command = S::bot()->commandManager->getCommandByAlias($alias);
                 if ($command->GetAccess() == S::bot()->config['bot']['user.max_access']) { 
-                    $list[] = $command->GetHelp(BotCommand::HELP_SHORT, $alias);
+                    $list[] = $command->GetHelpShort($alias);
                 }
             }
             $msg = "Доступные команды администрирования: \n".implode("\n", $list);
@@ -27,7 +24,7 @@ class HelpAdminCommand extends AdminCommand {
             if ($command->GetAccess() < S::bot()->config['bot']['user.max_access']) {
                 S::bot()->Msg("Команда '$params' существует, но не является администраторской.");
             } else {
-                $msg = $command->GetHelp(BotCommand::HELP_FULL, $params);
+                $msg = $command->GetHelpFull($params);
                 S::bot()->Msg($msg);
             }
         } else {
@@ -37,12 +34,9 @@ class HelpAdminCommand extends AdminCommand {
 }
 
 class EvalAdminCommand extends AdminCommand {
-    protected $helpstr_full = "{alias} code - интерпретирует заданный php код и отсылает результат вывода.",
-              $helpstr_short = "{alias} - интерпретирует php код";
-
-    public function __construct() {
-        parent::__construct('eval');
-    }
+    public $helpFull = "{alias} code - интерпретирует заданный php код и отсылает результат вывода.",
+              $helpShort = "{alias} - интерпретирует php код";
+    protected $_name = 'eval';
         
     public function Execute($params, &$msgevent) {
         parent::Execute($params, $msgevent);
@@ -58,15 +52,13 @@ class EvalAdminCommand extends AdminCommand {
 
 
 class CmdAdminCommand extends AdminCommand {
-    protected $helpstr_full = "{alias} - управление командами.\nВарианты:
+    public $helpFull = "{alias} - управление командами.\nВарианты:
 {alias} - список возможных параметров
 {alias} list - список всех установленных команд
 {alias} list <plugin> - список всех команд из плагина <plugin>",
-              $helpstr_short = "{alias} - управление командами";
+              $helpShort = "{alias} - управление командами";
 
-    public function __construct() {
-        parent::__construct('cmd');
-    }
+    protected $_name = 'cmd';
 
     public function Execute($params, &$msgevent) {
         parent::Execute($params, &$msgevent);        
@@ -186,18 +178,27 @@ private static function AccessCmd($p1) {
 
            
 class ExitAdminCommand extends AdminCommand {
-    protected $helpstr_full = "{alias} - завершение работы бота",
-              $helpstr_short = "{alias} - завершение работы бота";
+    public $helpFull = "{alias} - завершение работы бота",
+              $helpShort = "{alias} - завершение работы бота";
 
-    public function __construct() {
-        parent::__construct('exit');
-    }
+    protected $_name = 'exit';
     
     public function Execute($params, &$msgevent) {
         parent::Execute($params, $msgevent);
         S::logger()->log("Exit requested by ".$msgevent->sender);
         S::bot()->Msg("Завершение работы...");
         S::bot()->DoExit();    
+    }
+}
+
+class DebugAdminCommand extends AdminCommand {
+    public $helpFull = "{alias} - вывод отладочной информации о боте";
+
+    protected $_name = 'debug';
+
+    public function Execute($params, &$msgevent) {
+        parent::Execute($params, $msgevent);
+        print_r(S::bot()->pluginManager);
     }
 }
 
@@ -355,14 +356,11 @@ class ReconnectAdminCommand extends AdminCommand {
 */  
 class UserAdminCommand extends AdminCommand {
 
-    protected $helpstr_full = "{alias} - администрирование пользователей",
-              $helpstr_short = "{alias} - администрирование пользователей";
+    public $helpFull = "{alias} - администрирование пользователей",
+           $helpShort = "{alias} - администрирование пользователей";
 
-    protected $_msgevent;
-
-    public function __construct() {
-        parent::__construct('user');
-    }
+    protected $_msgevent,
+              $_name = 'user';
     
     public function Execute($params, &$msgevent) {
         $this->_msgevent = $msgevent;
@@ -379,8 +377,7 @@ class UserAdminCommand extends AdminCommand {
 
             default:
                 S::bot()->msg($msgevent->sender);
-        }
-        
+        }        
     }
 
     public function paramAccess($subparams) {
@@ -560,5 +557,6 @@ return array(
     'ReconnectAdminCommand',    
     '',   
     'TimerAdminCommand',
-    'InfoAdminCommand'*/ 
+    'InfoAdminCommand'*/
+    'DebugAdminCommand'
 );

@@ -26,6 +26,7 @@ class SteelBotDB extends SDatabase  {
             $options_table;
 
     const ER_DUP_ENTRY = 1062;
+    const ER_EMPTY_QUERY = 1065;
     const CR_SERVER_GONE_ERROR = 2006;
 
     /**
@@ -183,7 +184,7 @@ class SteelBotDB extends SDatabase  {
     public function CreateUser($user, $access = -1) {
         $user = self::EscapeString($user);
         if ($access < 0) {
-			$access = SteelBot::$cfg['user.default_access'];
+			$access = S::bot()->config['bot']['user.default_access'];
 		}
 
         $access = (int)$access;
@@ -489,6 +490,9 @@ class SteelBotDB extends SDatabase  {
      */
     public function Query($query) {
         $this->errno = $this->error = false;
+        //echo "\n=======\n";
+        //print_r($query);
+        //echo "\n=======\n";
         $return = mysql_query($query, $this->dbhandle);
         $this->errno = mysql_errno($this->dbhandle);
         $this->error = mysql_error($this->dbhandle);
@@ -505,8 +509,13 @@ class SteelBotDB extends SDatabase  {
                 S::logger()->add('Mysqlerror: '.$e->getMessage(), 'mysqldb');
             }
         }
+
+        if ($this->errno == self::ER_EMPTY_QUERY) {
+            return false;
+        }
         
         if ($this->errno) {
+            var_dump($this->errno);
             throw new db_exception($this->error, $this->errno);
         }
         return $return;
@@ -528,8 +537,10 @@ class SteelBotDB extends SDatabase  {
 		foreach ($values as &$v) {
 			$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
 		}
-		
-		return $this->query( $this->FormatQuery($query, $data) );
+
+        $query = str_replace($keys, $values, $query);
+         
+		return $this->query( $query );
 	}
 
 	public function FormatQuery($query, $data) {
@@ -543,7 +554,7 @@ class SteelBotDB extends SDatabase  {
 			$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
 		}
 		
-		return str_replace($keys, $values, $query);
+		return str_replace( $keys, $values, $query);
 	}
 	
 	/**

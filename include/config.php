@@ -2,9 +2,6 @@
 
 return array(
 	'bot' => array(		  
-			  //директория с плагинами( абсолютный путь )
-			  'plugin_dir'    => dirname(__FILE__).'/../plugins',
-			  
 			  //интервал прослушки сокета, рекомендуется 1
 			  'delaylisten'   => 1,
 			  

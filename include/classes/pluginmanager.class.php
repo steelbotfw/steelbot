@@ -8,10 +8,12 @@ class PluginManager extends SComponent {
 	
 	public function __construct($bot) {
 		parent::__construct($bot);
-
         $this->plugins = $this->FindPlugins(STEELBOT_DIR.'/plugins');
-        $userplugins = $this->FindPlugins($bot->config['bot']['plugin_dir']);
-        $this->plugins = S::mergeArray($this->plugins, $userplugins);
+
+        if (is_dir(APP_DIR.'/plugins')) {
+            $userplugins = $this->FindPlugins(APP_DIR.'/plugins');
+            $this->plugins = S::mergeArray($this->plugins, $userplugins);
+        }         
 	}
     
     public function getPluginInstance($name = null) {
@@ -20,8 +22,9 @@ class PluginManager extends SComponent {
                 return $this->_current_plugin;
             } else {
                 $backtrace = debug_backtrace();
-                $name = str_replace('.plugin.php', '', $backtrace[2]['file']);
-                $name = array_shift(explode('.', $name, 2));
+                $name = str_replace('.plugin.php', '', basename($backtrace[3]['file']));
+                $items = explode('.', $name, 2);
+                $name = array_shift($items);
                 if ($this->PluginLoaded($name)) {
                     return $this->instances[$name];
                 } else {
@@ -46,6 +49,7 @@ class PluginManager extends SComponent {
     }
 
     function FindPlugins($dir) {
+        S::logger()->log("Finding plugins in $dir");
         $names = glob($dir.'/*');
         $result = array();
         foreach ($names as $fileName) {
@@ -66,7 +70,6 @@ class PluginManager extends SComponent {
         if ($this->PluginLoaded($name)) {
             throw new BotException(("Plugin $name already loaded"));
         } else {
-            S::logger()->log("Loading plugin: $name ... ");
             $plug = new Plugin($filename);
             $this->_current_plugin = $plug;
             $plug->Load();        

@@ -119,7 +119,7 @@ while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
  	     } 
  	              
     } else {
-        S::logger()->log("Connection error: ".SteelBot::Error() );
+        S::logger()->log("Connection error: ".S::bot()->proto->Error() );
     }
     
     S::logger()->log("Disconnected.");

@@ -16,24 +16,14 @@
 class AdminCommand extends BotCommand {
     protected $_prefix = '.';
     
-    public function __construct($name) {
-        $this->_name = $name;
-    }
+   
 
-    public function GetAccess() {
+    public function getAccess() {
         return S::bot()->config['bot']['user.max_access'];
     }
 
     public function GetPrefix() {
         return $this->_prefix;
-    }
-
-    public function getHelp($inlist=0, $alias) {
-        if ($inlist==BotCommand::HELP_SHORT) {
-            return str_replace('{alias}', $alias, $this->helpstr_short);
-        } elseif ($inlist==BotCommand::HELP_FULL) {
-            return str_replace('{alias}', $alias, $this->helpstr_full);
-        }
     }
 
 }
