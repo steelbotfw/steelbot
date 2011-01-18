@@ -86,7 +86,6 @@ public function IsIMAccount($str) {
 
 public function IsAdmin($account) {
     foreach ($this->master_accounts as $pat) {
-        echo "PREG_MATCH $pat, $account\n";
         if (preg_match($pat, $account)) {
             return true;
         }

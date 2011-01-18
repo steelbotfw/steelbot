@@ -29,19 +29,7 @@ class Proto extends SBotProtocol  {
 public function __construct($bot) {
     parent::__construct($bot);
     
-    /**
-    * Преобразуем строку в массив с одним элементом,
-    * либо если в строке есть запятая, то считаем что 
-    * ей разделены несколько уинов администратора.
-    */
-    $adm = S::bot()->config['proto']['master_accounts'];
-    if (!is_array($adm)) {        
-        $adm = strpos($adm, ',') ? explode(',', $adm):array($adm);
-    }
     
-    foreach ($adm as $uin) {
-        $this->_masterAccounts[] = trim($uin);
-    }
 }
 
 public function GetProtoInfo() {
@@ -57,7 +45,24 @@ public function Connect() {
     $this->_icq->setOption('MessageCapabilities', 'utf-8');    
     $this->_icq->setOption('MessageType', 'plain_text'); 
     $this->_icq->setOption('Encoding', 'UNICODE');   
-    var_dump(S::bot()->config['proto']);
+
+    
+    /**
+    * Преобразуем строку в массив с одним элементом,
+    * либо если в строке есть запятая, то считаем что 
+    * ей разделены несколько уинов администратора.
+    */
+    $this->_masterAccounts = array();
+    $adm = S::bot()->config['proto']['master_accounts'];
+    if (!is_array($adm)) {        
+        $adm = strpos($adm, ',') ? explode(',', $adm):array($adm);
+    }
+    
+    foreach ($adm as $uin) {
+        $this->_masterAccounts[] = trim($uin);
+    }
+
+    
     return $this->_icq->connect(S::bot()->config['proto']['uin'], S::bot()->config['proto']['password']);
 }
 
@@ -167,6 +172,8 @@ public function IsIMAccount($string) {
 }
 
 public function IsAdmin($uin) {
+    echo "IS ADMIN $uin\n";
+    var_dump($this->_masterAccounts);
     return in_array($uin, $this->_masterAccounts);
 }
 
