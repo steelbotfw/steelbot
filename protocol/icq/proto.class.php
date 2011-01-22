@@ -172,8 +172,6 @@ public function IsIMAccount($string) {
 }
 
 public function IsAdmin($uin) {
-    echo "IS ADMIN $uin\n";
-    var_dump($this->_masterAccounts);
     return in_array($uin, $this->_masterAccounts);
 }
 

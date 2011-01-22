@@ -23,6 +23,9 @@ define('LOG_LEVEL_WARNING', 2);
 define('LOG_LEVEL_ERROR', 1);
 define('LOG_LEVEL_NONE', 0);
 
+// run options
+define('OPTION_CHECK', '-check');
+
 if (!isset($argv)) {
 	$argv = array(__FILE__);
 }
@@ -46,16 +49,19 @@ if (!isset($config)) {
 	die('Configuration is not specified');
 }
 
+// checking system
+if (@in_array(OPTION_CHECK, $argv ) || @$config['bot']['options'][OPTION_CHECK]) {
+    require_once(dirname(__FILE__).'/include/system.check.php');
+	CheckSystem($config);
+    die(OPTION_CHECK." option enabled. Exiting.\n");
+}
+
 S::init($config);
 
 // common functions
 require_once STEELBOT_DIR.'/include/common.php';
 
-// checking system
-if ( !@array_search('-skipcheck', $argv) ) {
-	require_once('include/system.check.php');
-	CheckSystem();
-}
+
 
 
 
@@ -83,10 +89,7 @@ if ($cfg['db.use_config']) {
 
 require_once STEELBOT_DIR.'/include/i18n.php';
 
-if (@in_array('-test', $argv ) || S::bot()->config['bot']['test']) {
-    S::logger()->log("'-test' option enabled. Exiting.");
-    die();
-}
+
 
 
 set_time_limit(0);
@@ -114,8 +117,7 @@ while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
                   usleep((int)S::bot()->config['bot']['delaylisten']*1000000);  
               } else {
                   S::bot()->eventManager->EventRun($event);
-              }
-              echo '.';   		      	
+              }  		      	
  	     } 
  	              
     } else {

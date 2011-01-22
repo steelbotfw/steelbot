@@ -127,7 +127,7 @@ function Msg($text, $to = false) {
 	$this->eventManager->EventRun( $event );
     $this->proto->msg($event->content, $event->to);    
     $ev = $this->eventManager->EventRun( new Event(EVENT_MSG_SENT, array('text'=>$text, 'to'=>$to)) );    
-    S::logger()->log("[>$to ".$text);
+    S::logger()->log("> $to ".$text);
 }
     
 function GetSender() {
@@ -241,19 +241,7 @@ function FindAlias($plugin, $command) {
     }
 }
 
-function AddAlias($plugin, $command, $alias) {
-    if (self::CommandExists($plugin, $command)) {
-        self::$cmdlist[$command][$plugin]->AddAlias($alias);
-        self::$aliases[$alias] = self::$cmdlist[$command][$plugin];
-        S::logger()->log($command. ' => '.$plugin.'/'.$command);
-		if (SteelBot::$cfg['db.use_cmd_aliases']) {
-			SteelBot::$database->AddAlias($plugin, $command, $alias);
-		}
-        return true;
-    } else {
-        return false;
-    }
-} */
+ */
 
 static function ExportInfo($name, $version, $author) {
     $info = array(
@@ -268,23 +256,6 @@ static function ExportInfo($name, $version, $author) {
 }
 
 /**
- * @desc Удаляет пользовательскую команду
- *
- * @param string $command - имя команды
- * @return bool - true, если команда удалена
- *                false, если команда не зарегистрирована
- * 
- * @todo Удалять все алиасы из бота. Создавать событие.
- *
-function UnregisterCmd($plugin, $command) {
-    if (self::CommandExists($plugin, $command)) {
-        unset(self::$cmdlist[$command][$plugin]);
-        S::logger()->log($command);
-        return true;
-    } else {
-        return false;
-    }
-}
 
 function DropMsg() {
     self::$msgdropped = true;
@@ -299,24 +270,6 @@ function DropMsg() {
  *                false,если получен некорректный уровень доступа или
  *                команда не найдена 
  *
-function SetCmdAccess($plugin, $cmd,$level) {
-	if (!is_numeric($level)) {
-	    throw new BotException("$level is not a numeric value", ERR_NOT_NUMERIC);
-	} elseif (self::CommandExists($plugin, $cmd)) {
-		if (self::$cmdlist[$cmd][$plugin]->SetAccess( $level )) {
-		    self::$database->SetCmdAccess($plugin, $cmd, $level);
-		    $ev = new Event(EVENT_CMD_ACCESS_CHANGED, array(
-		                                               'plugin' => $plugin,
-		                                               'command'=>$cmd, 
-		                                               'level'=>$level
-		                                              )
-		    );
-		    self::EventRun($ev);
-		}
-		return true;
-	} else throw new BotException("Command does not exists", ERR_CMD_NOTFOUND);
-}
-
 
 function SetOption($option, $value, $type=self::OPTBOT, $id=0) {
 	if ($type==self::OPTBOT) {
@@ -367,10 +320,8 @@ function SetUserAccess($user,$level) {
 function getUserAccess($user = false) {
     $user = $user?$user:$this->msgEvent->sender;
     if ($this->proto->IsAdmin($user)) {
-        echo "ADMIN\n";
         return S::bot()->config['bot']['user.max_access'];
     } else {
-        echo "USER\n";
 		return $this->db->GetUserAccess($user);
     }
 }
@@ -389,6 +340,9 @@ function Parse($event) {
         $alias = $event->content;
         $params = null;
     }
+
+    S::logger()->log("< ".$event->sender." ".$event->content);
+    
     if (!$this->config['bot']['msg_case_sensitive']) {
         $alias = mb_strtolower($alias, 'utf-8');
     }

@@ -61,7 +61,7 @@ class CmdAdminCommand extends AdminCommand {
     protected $_name = 'cmd';
 
     public function Execute($params, &$msgevent) {
-        parent::Execute($params, &$msgevent);        
+        parent::Execute($params, $msgevent);        
         if (empty($params)) {
             S::Bot()->Msg("Синтаксис: ".$msgevent->alias." list");
         } else {

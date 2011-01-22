@@ -7,3 +7,5 @@ class db_exception extends BotException {
         parent::__construct($message, $code);
     }
 }
+
+

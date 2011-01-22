@@ -1,39 +1,39 @@
 <?php
 
-require_once dirname(__FILE__).'/mysql.class.php';
-
 /**
- * SteelBotDB class for Steelbot
+ * MySQL class
  *
  * http://steelbot.net
  *
  * @author N3x^0r
- * @version 1.2.0
+ * @package steelbot
  *
  */
-class SteelBotDB extends MySQL  {
 
+class MySQL extends SDatabase  {
 
+    public $table_prefix,
+           $dbname,
+           $username,
+           $error = false,
+           $errno = false;
 
-	
+    protected $dbhandle,
+            $password,
+            $host,
+            $connected = false,
+			$setnames,
+            $options_table;
+
+    const ER_DUP_ENTRY = 1062;
+    const ER_EMPTY_QUERY = 1065;
+    const CR_SERVER_GONE_ERROR = 2006;
+
     /**
-     * Деструктор класса.
-     * Автоматически отключает бота от БД.
+     * Конструктор класса
      */
-    public function __destruct() {
-        $this->Disconnect();
-    }
-
-    /**
-     * Получение информации о базе данных, ее версии и авторе.
-     * @return array
-     */
-    public function GetDBInfo() {
-        return array(
-            'author' => 'nexor',
-            'version' => '1.2.0',
-            'name' => 'mysqldb'
-            );
+    public function __construct($bot) {
+		parent::__construct($bot);
     }
 
     /**
@@ -41,40 +41,33 @@ class SteelBotDB extends MySQL  {
      * @return bool
      */
     public function Connect() {
-
-        $this->dbname   = S::bot()->config['db']['database'];
-        $this->username = S::bot()->config['db']['user'];
-        $this->password = S::bot()->config['db']['password'];
-        $this->table_prefix = S::bot()->config['db']['table_prefix'];
-        $this->host = S::bot()->config['db']['host'];
-		$this->setnames = S::bot()->config['db']['setnames'];
-        $this->options_table = S::bot()->config['db']['table_config'];
-
-        parent::Connect();
-		
-        if ( $this->selectDB($this->dbname)) {
-            $this->InstallTable(dirname(__FILE__).'/steelbot_users.sql');
-			$this->UpdateTable('users');
-
-            $this->InstallTable(dirname(__FILE__).'/steelbot_commands.sql');
-            $this->UpdateTable('commands');
-
-            $this->InstallTable(dirname(__FILE__).'/steelbot_options.sql');
-            $this->UpdateTable('options');
-
-            $this->InstallTable(dirname(__FILE__).'/steelbot_aliases.sql');
-            $this->UpdateTable('aliases');
-
-            if (class_exists('Event')) {
-                S::bot()->eventManager->EventRun(new Event(EVENT_DB_CONNECTED, array('dbname'=>$this->dbname)));
-            } else {
-                echo "Connected to db\n";
-            }
-            return true;
-
-        } else {
-            throw new db_exception( mysql_error($this->dbhandle), mysql_errno($this->dbhandle) );
+   
+        if (!function_exists('mysql_ping')) {
+            throw new DBException("Fatal error: mysql extension must be loaded", 0);
         }
+        
+        if (is_resource($this->dbhandle) && mysql_ping($this->dbhandle)) {
+            return true;
+        }        
+        
+        $this->dbhandle = mysql_connect($this->host, $this->username, $this->password);
+        if (!$this->dbhandle) {            
+            throw new DBException(mysql_error(), mysql_errno());
+        }
+		
+		if (!empty($this->setnames)) {
+			mysql_query("SET NAMES '".$this->setnames."'");
+		}
+		
+        $this->connected = true;            
+    }
+
+    public function GetDbInfo() {
+        return array('name' => 'mysql');
+    }
+
+    public function selectDB($dbname) {
+        return mysql_select_db($dbname);
     }
 
     /**
@@ -98,7 +91,7 @@ class SteelBotDB extends MySQL  {
 				  }
                 
               } else {
-                  S::logger()->log("Warning: error installing table from $basename", 'mysqldb');                  
+                  S::logger()->log("Warning: error installing table from $basename", 'mysqldb');                 
               }
     }
 
@@ -118,9 +111,7 @@ class SteelBotDB extends MySQL  {
      * Отключение от БД.
      */
     public function Disconnect() {
-        if (is_resource($this->dbhandle)) {
-            mysql_close($this->dbhandle);
-        }
+        @mysql_close($this->dbhandle);
         $this->connected = false;
     }
 

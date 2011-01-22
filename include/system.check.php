@@ -5,7 +5,7 @@
  * важные конфигурационные переменные на корректность
  *
  */
-function CheckSystem() {  
+function CheckSystem($config) {  
   echo "Testing bot and system ...\n";
   
   // system capabilities check
@@ -54,17 +54,11 @@ function CheckSystem() {
   echo "    Checking timezone settings... \n";
   $timezone = ini_get('date.timezone');
   if (!$timezone) {
-	  echo "   [ Warning ] date.timezone in php.ini is not set. Using 'Europe/Moscow' option\n";
+	  echo "    [ Warning ] date.timezone in php.ini is not set. Using 'Europe/Moscow' option.\n";
 	  ini_set('date.timezone', 'Europe/Moscow');
   } else {
 	echo "    date.timezone=$timezone. OK\n";
   }
-
-  // configuration check
-  echo "    Configuration check...\n";
-  if (empty(S::bot()->cfg['proto']['password'])) {
-        echo "   [ Warning ] password is not specified - ['password']\n";
-  }   
   echo "Test OK\n";
 }
  

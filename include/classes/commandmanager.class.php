@@ -56,7 +56,27 @@ class CommandManager extends SComponent {
 
     function AliasExists($alias) {
         return array_key_exists($alias, self::$aliases);
-    } */
+    }
+    
+    
+    function SetCmdAccess($plugin, $cmd,$level) {
+	if (!is_numeric($level)) {
+	    throw new BotException("$level is not a numeric value", ERR_NOT_NUMERIC);
+	} elseif (self::CommandExists($plugin, $cmd)) {
+		if (self::$cmdlist[$cmd][$plugin]->SetAccess( $level )) {
+		    self::$database->SetCmdAccess($plugin, $cmd, $level);
+		    $ev = new Event(EVENT_CMD_ACCESS_CHANGED, array(
+		                                               'plugin' => $plugin,
+		                                               'command'=>$cmd, 
+		                                               'level'=>$level
+		                                              )
+		    );
+		    self::EventRun($ev);
+		}
+		return true;
+	} else throw new BotException("Command does not exists", ERR_CMD_NOTFOUND);
+}
+*/
 
     public function BuildCommand($name, $func, $access = 1, $helpstr = null, $create_alias = true) {
         $name = mb_strtolower($name, 'utf-8');
