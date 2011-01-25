@@ -120,7 +120,9 @@ function Init() {
         if ($filename = $this->pluginManager->pluginAvailable($pluginName))
         {
             $this->pluginManager->LoadPlugin($filename, $params);
-        }        
+        }  else {
+            throw new BotException("Unknown plugin: $pluginName", 0);
+        }      
     }        
 }
 

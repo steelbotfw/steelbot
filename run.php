@@ -15,7 +15,7 @@ $config = array(
 		'password' => '123'
 	),
 	'plugins' => array(
-		'default'
+		'default',
 		'help'
 		)
 );

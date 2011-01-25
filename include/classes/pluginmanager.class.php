@@ -13,7 +13,18 @@ class PluginManager extends SComponent {
         if (is_dir(APP_DIR.'/plugins')) {
             $userplugins = $this->FindPlugins(APP_DIR.'/plugins');
             $this->plugins = S::mergeArray($this->plugins, $userplugins);
-        }         
+        }
+
+        if (isset($bot->config['bot']['plugin_sources'])) {
+            foreach ($bot->config['bot']['plugin_sources'] as $path) {
+                if (is_dir($path)) {
+                    $plugins = $this->FindPlugins($path);
+                    $this->plugins = S::mergeArray($this->plugins, $plugins);
+                } else {
+                    S::logger()->log("Invalid path: $path");
+                }
+            }
+        }
 	}
     
     public function getPluginInstance($name = null) {
