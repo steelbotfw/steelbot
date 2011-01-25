@@ -78,7 +78,7 @@ class CommandManager extends SComponent {
 }
 */
 
-    public function BuildCommand($name, $func, $access = 1, $helpstr = null, $create_alias = true) {
+    public function BuildCommand($name, $func, $access = 1, $helpstr = null) {
         $name = mb_strtolower($name, 'utf-8');
 	    if (!is_numeric($access)) {
 	         $access = 1;
@@ -88,13 +88,8 @@ class CommandManager extends SComponent {
         $command->setAccess($access);
         $command->helpFull = $helpstr;
         $command->helpShort = $name;
-        if ($createAlias) {
-            $this->createAlias($command, $name);
-        }
         
 	    return $command;
-    }	
-
-	
+    }		
 
 }

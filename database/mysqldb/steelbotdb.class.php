@@ -78,7 +78,6 @@ class SteelBotDB extends MySQL  {
     }
 
     /**
-     *
      * @param string $filename
      */
     public function InstallTable($filename) {
@@ -103,7 +102,6 @@ class SteelBotDB extends MySQL  {
     }
 
     /**
-     *
      * @param string $table
      */
     public function UpdateTable($table) {

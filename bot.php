@@ -62,9 +62,6 @@ S::init($config);
 require_once STEELBOT_DIR.'/include/common.php';
 
 
-
-
-
 /*
 if ($cfg['db.use_config']) {
 	foreach ($cfg as $key=>$value) {
@@ -89,13 +86,13 @@ if ($cfg['db.use_config']) {
 
 require_once STEELBOT_DIR.'/include/i18n.php';
 
-
-
-
 set_time_limit(0);
 error_reporting(E_ALL ^ E_NOTICE);
 
-S::bot()->eventManager->RegisterEventHandler(EVENT_MSG_RECEIVED, array(S::bot(),'Parse'))
+
+if (!is_callable(array(S::bot()->sessionManager,'callHandler'))) die("OMG!\n");
+
+S::bot()->eventManager->RegisterEventHandler(EVENT_MSG_RECEIVED, array(S::bot()->sessionManager,'callHandler'))
 //->RegisterEventHandler(EVENT_MSG_UNHANDLED, array(SteelBot::$lng, 'RestorePrimaryLang'), 10)
 //->RegisterEventHandler(EVENT_MSG_HANDLED, array(SteelBot::$lng, 'RestorePrimaryLang'), 10)
 ->RegisterEventHandler(EVENT_EXIT, array(S::bot()->proto, 'Disconnect'));
@@ -106,7 +103,7 @@ S::bot()->eventManager->EventRun( new Event(EVENT_BOT_LOADED) );
 while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
    flush();
    
-   S::logger()->log("Connecting to server  ... ");
+   S::logger()->log("Connecting to server ... ");
    if ( S::bot()->proto->Connect() ) {
          $connect_attempts = 0;		   
 	     S::logger()->log("Ready to work.");
@@ -125,8 +122,7 @@ while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
     }
     
     S::logger()->log("Disconnected.");
-    sleep(10);
+    sleep(S::bot()->config['proto']['reconnect_delay']);
 }
 S::logger()->log('Bot stopped');
-echo "\nBot stopped.\n";  
   

@@ -15,21 +15,20 @@ public $config,
        $db,
 	   $proto;
 
-public  $database,
-               $msgdropped = false,
-               $lng,
-               $cmdlist = array(),
-               
-              
-               
-               $msgEvent,
-               $cfg,
-               $plugins = array(); 
+public $database,
+       $msgdropped = false,
+       $lng,
+       ///$cmdlist = array(),
+                     
+       $msgEvent,
+       ///$cfg,
+       $plugins = array(); 
 
 private $_timermanager = null,
         $_eventmanager = null,
         $_pluginmanager = null,
-        $_commandmanager = null;
+        $_commandmanager = null,
+        $_sessionmanager = null;
 
 			   
 const OPTBOT = 1;
@@ -66,8 +65,10 @@ public function __construct($config) {
     
     $this->_pluginmanager = new PluginManager($this);
     $this->_commandmanager = new CommandManager($this);
-	$this->db = new SteelBotDB($this);
+    $this->_sessionmanager = new SessionManager($this);
+    $this->db = new SteelBotDB($this);
 	$this->proto = new Proto($this);
+    
     
 }
 
@@ -84,6 +85,10 @@ public function getPluginManager() {
 
 public function getCommandManager() {
     return $this->_commandmanager;
+}
+
+public function getSessionManager() {
+    return $this->_sessionmanager;
 }
 
 public function getPlugin() {
@@ -328,57 +333,56 @@ function getUserAccess($user = false) {
 
 
 
-/**
- * @desc Анализирует и исполняет присланную пользовательскую команду
- *
- * @return bool
- */
-function Parse($event) {
-    if (strpos($event->content, ' ')) {
-        list($alias, $params) = explode(' ', $event->content, 2);
-    } else {
-        $alias = $event->content;
-        $params = null;
-    }
+    /**
+     * @desc Анализирует и исполняет присланную пользовательскую команду
+     *
+     * @return bool
+     */
+    public function Parse($event) {
+        if (strpos($event->content, ' ')) {
+            list($alias, $params) = explode(' ', $event->content, 2);
+        } else {
+            $alias = $event->content;
+            $params = null;
+        }
 
-    S::logger()->log("< ".$event->sender." ".$event->content);
+        S::logger()->log("< ".$event->sender." ".$event->content);
     
-    if (!$this->config['bot']['msg_case_sensitive']) {
-        $alias = mb_strtolower($alias, 'utf-8');
-    }
+        if (!$this->config['bot']['msg_case_sensitive']) {
+            $alias = mb_strtolower($alias, 'utf-8');
+        }
 
-    $event->alias = $alias;
-    $event->params = $params;
-
-    $this->msgEvent = $event;
+        $event->alias = $alias;
+        $event->params = $params;
+        $this->msgEvent = $event;    
+        $command = $this->commandManager->getCommandByAlias($alias);
     
-    $command = $this->commandManager->getCommandByAlias($alias);
-    
-	if ($command instanceof BotCommand) {
-	    try {
-            $command->execute($params, $event);			
-	    } catch (BotException $e) {
-	        S::logger()->log( $e->getMessage() );
-	        switch ($e->getCode()) {
-	            case ERR_CMD_ACCESS:
-                    S::logger()->log("ERR_CMD_ACCESS");
-	                self::Msg( $e->getMessage() );
-	                break;
+        if ($command instanceof BotCommand) {
+            try {
+                $command->execute($params, $event);			
+            } catch (BotException $e) {
+                S::logger()->log( $e->getMessage() );
+                switch ($e->getCode()) {
+                    case ERR_CMD_ACCESS:
+                        S::logger()->log("ERR_CMD_ACCESS");
+                        self::Msg( $e->getMessage() );
+                        break;
 	                
-	            case ERR_FUNC:
-                    S::logger()->log("ERR_FUNC");
-                    //self::Msg( LNG(LNG_ERRFUNC));
-	                break;
-	        }
-	    }
-	} else {
-        $this->eventManager->EventRun(new Event(EVENT_MSG_UNHANDLED, array(
-            'alias' => $alias,
-            'params' => $params
-        )));
-    }    
-	return true;    
+                    case ERR_FUNC:
+                        S::logger()->log("ERR_FUNC");
+                        //self::Msg( LNG(LNG_ERRFUNC));
+                        break;
+                }
+            }
+        } else {
+            $this->eventManager->EventRun(new Event(EVENT_MSG_UNHANDLED, array(
+                'alias' => $alias,
+                'params' => $params
+            )));
+        }    
+        return true;    
 }
+
 /*
 function Connect() {
     if ($p = Proto::Connect() ) {
