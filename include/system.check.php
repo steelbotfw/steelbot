@@ -1,11 +1,9 @@
 <?php
 
 /**
- * @desc Проверяет систему на пригодность для использования бота, а также
- * важные конфигурационные переменные на корректность
- *
+ * @desc Check system for bot comptability and set needed inital values.
  */
-function CheckSystem($config) {  
+function CheckSystem() {  
   echo "Testing bot and system ...\n";
   
   // system capabilities check
@@ -54,7 +52,7 @@ function CheckSystem($config) {
   echo "    Checking timezone settings... \n";
   $timezone = ini_get('date.timezone');
   if (!$timezone) {
-	  echo "    [ Warning ] date.timezone in php.ini is not set. Using 'Europe/Moscow' option.\n";
+	  echo "    [ Notice ] date.timezone in php.ini is not set. Using 'Europe/Moscow' option.\n";
 	  ini_set('date.timezone', 'Europe/Moscow');
   } else {
 	echo "    date.timezone=$timezone. OK\n";

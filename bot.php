@@ -4,7 +4,7 @@
  * 
  * http://steelbot.net
  * 
- * @version  3
+ * @version  3.0
  * @author   N3x^0r ( mailto: n3xorus@gmail.com )
  * @license  GPL v. 2
  * 
@@ -49,12 +49,9 @@ if (!isset($config)) {
 	die('Configuration is not specified');
 }
 
-// checking system
-if (@in_array(OPTION_CHECK, $argv ) || @$config['bot']['options'][OPTION_CHECK]) {
-    require_once(dirname(__FILE__).'/include/system.check.php');
-	CheckSystem($config);
-    die(OPTION_CHECK." option enabled. Exiting.\n");
-}
+
+require_once(dirname(__FILE__).'/include/system.check.php');
+CheckSystem($config);
 
 S::init($config);
 
@@ -113,7 +110,14 @@ while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
               if ($event===false) {
                   usleep((int)S::bot()->config['bot']['delaylisten']*1000000);  
               } else {
-                  S::bot()->eventManager->EventRun($event);
+                  try {
+                     S::bot()->eventManager->EventRun($event);
+                  } catch (BotException $e) {
+                     $exception = print_r($e,true);
+                     $fname = dirname(__FILE__).'/tmp/'.time().'.txt';
+                     file_put_contents($fname, $exception);
+                     S::logger()->log("BotExcetion catched and saved to $fname");
+                  }
               }  		      	
  	     } 
  	              

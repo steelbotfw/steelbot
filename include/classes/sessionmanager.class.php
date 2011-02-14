@@ -3,11 +3,20 @@
 class SessionManager extends SComponent {
 
 	protected $_sessions = array();
-	
+	protected $defaultHandler = null;
+    
 	public function __construct($bot) {
 		parent::__construct($bot);
         S::logger()->log("Session Manager starting...", 'session_manager');
 	}    
+
+    public function setDefaultHandler($handler) {
+        $this->defaultHandler = $handler;
+    }
+
+    public function restoreDefaultHandler() {
+        $this->defaultHandler = null;
+    }
 
 	public function pushHandler($handler, $user) {
         if (array_key_exists($user, $this->_sessions)) {
@@ -31,7 +40,11 @@ class SessionManager extends SComponent {
     public function SessionStart($user) {
         if (!array_key_exists($user, $this->_sessions)) {
             $this->_sessions[$user] = new Session($user);
-            $this->_sessions[$user]->pushHandler(array(S::bot(), 'Parse'));
+            if (is_null($this->defaultHandler)) {
+                $this->_sessions[$user]->pushHandler(array(S::bot(), 'Parse'));
+            } else {
+                $this->_sessions[$user]->pushHandler($this->defaultHandler);
+            }
             return $this->_sessions[$user];
         } else {
             return null;

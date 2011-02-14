@@ -2,7 +2,7 @@
 
 require_once "botcommand.class.php";
 
-class Plugin extends SComponent{
+class Plugin extends SComponent implements ArrayAccess{
     protected $_name,
             $filename,
             
@@ -100,12 +100,59 @@ class Plugin extends SComponent{
     public function DelCommand($cmdname) {
         unset( $this->commands[$cmdname] );
     }
+
+    public function GetCommand($commandName) {
+        if (isset($this->commands[$commandName])) {
+            return $this->commands[$commandName];
+        } else {
+            return null;
+        }
+    }
     
     public function GetCommands() {
         return $this->commands;
     }
-    
-    public function GetActiveCommands() {
-        
+
+    /**
+	 * This method is required by the interface ArrayAccess.
+	 * @param mixed $offset the offset to check on
+	 * @return boolean
+     * @since 3.0
+	 */
+	public function offsetExists($offset)
+	{
+        return isset($this->commands[$offset]);
+	}
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param integer $offset the offset to retrieve element.
+	 * @return mixed the element at the offset, null if no element is found at the offset
+     * @since 3.0
+	 */
+	public function offsetGet($offset)
+	{
+        return isset($this->commands[$offset]) ? $this->commands[$offset] : null;
+	}
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param integer $offset the offset to set element
+	 * @param mixed $item the element value
+     * @since 3.0
+	 */
+	public function offsetSet($offset,$item)
+	{
+		trigger_error("Illegal array operation");
     }
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param mixed $offset the offset to unset element
+     * @since 3.0
+	 */
+	public function offsetUnset($offset)
+	{
+        unset( $this->commands[$cmdname] );
+	}
 }

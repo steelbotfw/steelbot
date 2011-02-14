@@ -88,7 +88,7 @@ public function AddEventType($name) {
  */
 public function EventRun($event, $handledrop = true) {
     if (!$event instanceof Event) {
-        throw new BotException("First parameter must be an Event object");
+        throw new BotException("First parameter must be an Event object",0);
     }
     $code = $event->GetCode();
     if (array_key_exists($code, $this->events)) {        

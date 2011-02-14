@@ -1,6 +1,6 @@
 <?php
 
-class PluginManager extends SComponent {	
+class PluginManager extends SComponent implements ArrayAccess {	
 	protected $instances = array(),
               $_current_plugin,
               $plugins;
@@ -51,6 +51,12 @@ class PluginManager extends SComponent {
         }
     }
 
+    /**
+     * Check if plugin is available
+     * 
+     * @return string
+     * @since 3.0
+     */
     public function pluginAvailable($name) {
         if (array_key_exists($name, $this->plugins)) {
             return $this->plugins[$name];
@@ -86,13 +92,20 @@ class PluginManager extends SComponent {
             $plug->Load();        
             $this->instances[$name] = $plug;
             S::logger()->log("'$name' load OK");
-            S::bot()->eventManager->EventRun( new Event(EVENT_PLUGIN_LOADED, array('name'=>$name)));                   
+            S::bot()->eventManager->EventRun(
+                new Event(EVENT_PLUGIN_LOADED, array('name'=>$name))
+            );                   
             $this->_current_plugin = null;
             return true;        
         }
     }
 
-    public function AddCommand($command) {
+    /**
+     * @param BotCommand $command
+     * @return string
+     * @since 3.0
+     */
+    public function AddCommand(BotCommand $command) {
         $plugin = $this->pluginInstance;
         if ($plugin != null) {
             $plugin->AddCommand($command);
@@ -102,11 +115,67 @@ class PluginManager extends SComponent {
         }
     }    
 
-    function PluginLoaded($plugin) {
+    /**
+     * Check if plugin is loaded
+     *
+     * @param string $param
+     * @return bool
+     * @since 3.0
+     */
+    public function PluginLoaded($plugin) {
         return array_key_exists($plugin, $this->instances);
     }
 
+    /**
+     * Get all plugin instances
+     *
+     * @return array
+     * @since 3.0
+     */
     public function getPluginInstances() {
         return $this->instances;
     }
+
+    /**
+	 * This method is required by the interface ArrayAccess.
+	 * @param mixed $offset the offset to check on
+	 * @return boolean
+     * @since 3.0
+	 */
+	public function offsetExists($offset)
+	{
+        return isset($this->instances[$offset]);
+	}
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param integer $offset the offset to retrieve element.
+	 * @return mixed the element at the offset, null if no element is found at the offset
+     * @since 3.0
+	 */
+	public function offsetGet($offset)
+	{
+        return isset($this->instances[$offset]) ? $this->instances[$offset] : null;
+	}
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param integer $offset the offset to set element
+	 * @param mixed $item the element value
+     * @since 3.0
+	 */
+	public function offsetSet($offset,$item)
+	{
+		trigger_error("Illegal array operation");
+    }
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param mixed $offset the offset to unset element
+     * @since 3.0
+	 */
+	public function offsetUnset($offset)
+	{
+        trigger_error("Illegal array operation");
+	}
 }

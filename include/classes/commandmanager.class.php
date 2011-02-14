@@ -1,6 +1,6 @@
 <?php
 
-class CommandManager extends SComponent {
+class CommandManager extends SComponent implements ArrayAccess {
 
 	protected $commands = array(),
               $aliases = array();
@@ -26,8 +26,30 @@ class CommandManager extends SComponent {
             S::bot()->db->setCmdAccess($pluginName, $command->name, $command->GetAccess());
         }		
         $this->commands[$pluginName][$command->name] = $command;
+        S::bot()->eventManager->EventRun(new Event(EVENT_CMD_REGISTERED, array('command' => $command)));
         return $this;
 	}
+
+    /**
+     * @since 3.0
+     */
+    public function UnregisterCommand($command) {
+        if ($command instanceof BotCommand) {
+            foreach ($this->aliases as $k=>$c) {
+                if ($c == $command) {
+                    unset($this->aliases[$k]);
+                }
+            }
+            $c->plugin->DelCommand($command->name);
+            S::bot()->eventManager->EventRun( new Event(EVENT_CMD_UNREGISTERED,
+            array('command' => $command)));
+            
+        } elseif (strpos($command, '/')) {
+            list($pluginName, $commandName) = explode('/', $command);
+            $c = S::bot()->pluginManager[$pluginName][$commandName];
+            $this->UnregisterCommand($c);
+        }
+    }
 
     public function CreateAlias($command, $alias) {
         if (array_key_exists($alias, $this->aliases)) {
@@ -90,6 +112,49 @@ class CommandManager extends SComponent {
         $command->helpShort = $name;
         
 	    return $command;
-    }		
+    }
+
+    /**
+	 * This method is required by the interface ArrayAccess.
+	 * @param mixed $offset the offset to check on
+	 * @return boolean
+     * @since 3.0
+	 */
+	public function offsetExists($offset)
+	{
+        return isset($this->aliases[$offset]);
+	}
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param integer $offset the offset to retrieve element.
+	 * @return mixed the element at the offset, null if no element is found at the offset
+     * @since 3.0
+	 */
+	public function offsetGet($offset)
+	{
+        return isset($this->aliases[$offset]) ? $this->aliases[$offset] : null;
+	}
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param integer $offset the offset to set element
+	 * @param mixed $item the element value
+     * @since 3.0
+	 */
+	public function offsetSet($offset,$item)
+	{
+		trigger_error("Illegal array operation");
+    }
+
+	/**
+	 * This method is required by the interface ArrayAccess.
+	 * @param mixed $offset the offset to unset element
+     * @since 3.0
+	 */
+	public function offsetUnset($offset)
+	{
+        unset( $this->aliases[$cmdname] );
+	}
 
 }

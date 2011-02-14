@@ -53,6 +53,8 @@ public function __construct($config) {
         'EVENT_PRE_PLUGIN_LOAD',
         'EVENT_PLUGIN_LOADED',
         'EVENT_CMD_ACCESS_CHANGED',
+        'EVENT_CMD_REGISTERED',
+        'EVENT_CMD_UNREGISTERED',
         'EVENT_CMD_LOADED',
         'EVENT_CMD_DISABLED',
         'EVENT_CMD_ENABLED',
@@ -317,21 +319,21 @@ function SetUserAccess($user,$level) {
     }    
 }
 
-/**
- * @desc Возвращает уровень доступа, установленный для пользователя. Если 
- * пользователь не указан, то возвращает уровень доступа приславшего сообщение.
- *
- * @param  string $user
- * @return int
- */
-function getUserAccess($user = false) {
-    $user = $user?$user:$this->msgEvent->sender;
-    if ($this->proto->IsAdmin($user)) {
-        return S::bot()->config['bot']['user.max_access'];
-    } else {
-		return $this->db->GetUserAccess($user);
-    }
-}
+	/**
+	 * @desc Возвращает уровень доступа, установленный для пользователя. Если 
+	 * пользователь не указан, то возвращает уровень доступа приславшего сообщение.
+	 *
+	 * @param  string $user
+	 * @return int
+	 */
+	public function getUserAccess($user = false) {
+		$user = $user?$user:$this->msgEvent->sender;
+		if ($this->proto->IsAdmin($user)) {
+			return S::bot()->config['bot']['user.max_access'];
+		} else {
+			return $this->db->GetUserAccess($user);
+		}
+	}
 
 
 
@@ -361,7 +363,8 @@ function getUserAccess($user = false) {
     
         if ($command instanceof BotCommand) {
             try {
-                $command->execute($params, $event);			
+                $command->execute($params, $event);
+                			
             } catch (BotException $e) {
                 S::logger()->log( $e->getMessage() );
                 switch ($e->getCode()) {
