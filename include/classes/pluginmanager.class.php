@@ -15,8 +15,8 @@ class PluginManager extends SComponent implements ArrayAccess {
             $this->plugins = S::mergeArray($this->plugins, $userplugins);
         }
 
-        if (isset($bot->config['bot']['plugin_sources'])) {
-            foreach ($bot->config['bot']['plugin_sources'] as $path) {
+        if (isset($bot->config['plugin_sources'])) {
+            foreach ($bot->config['plugin_sources'] as $path) {
                 if (is_dir($path)) {
                     $plugins = $this->FindPlugins($path);
                     $this->plugins = S::mergeArray($this->plugins, $plugins);

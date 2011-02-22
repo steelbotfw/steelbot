@@ -86,9 +86,6 @@ require_once STEELBOT_DIR.'/include/i18n.php';
 set_time_limit(0);
 error_reporting(E_ALL ^ E_NOTICE);
 
-
-if (!is_callable(array(S::bot()->sessionManager,'callHandler'))) die("OMG!\n");
-
 S::bot()->eventManager->RegisterEventHandler(EVENT_MSG_RECEIVED, array(S::bot()->sessionManager,'callHandler'))
 //->RegisterEventHandler(EVENT_MSG_UNHANDLED, array(SteelBot::$lng, 'RestorePrimaryLang'), 10)
 //->RegisterEventHandler(EVENT_MSG_HANDLED, array(SteelBot::$lng, 'RestorePrimaryLang'), 10)

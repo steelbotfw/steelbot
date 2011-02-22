@@ -382,7 +382,8 @@ function SetUserAccess($user,$level) {
         } else {
             $this->eventManager->EventRun(new Event(EVENT_MSG_UNHANDLED, array(
                 'alias' => $alias,
-                'params' => $params
+                'params' => $params,
+                'event' => $event
             )));
         }    
         return true;    

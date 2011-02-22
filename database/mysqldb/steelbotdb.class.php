@@ -11,17 +11,48 @@ require_once dirname(__FILE__).'/mysql.class.php';
  * @version 1.2.0
  *
  */
-class SteelBotDB extends MySQL  {
+class SteelBotDB extends SDatabase  {
+	private $mysql;
 
+    public function __construct($bot) {
+        parent::__construct($bot);
+        $this->mysql = new MySQL;
+    }
 
+    public function __get($key) {
+        if (property_exists($this->mysql, $key)) {
+            return $this->mysql->$key;
+        } else {
+            return parent::__get($key);
+        }
+    }
 
-	
+    public function __set($key, $value) {
+        if (property_exists($this->mysql, $key)) {
+            $this->mysql->$key = $value;
+        } else {
+            parent::__set($key, $value);
+        }
+    }
+
+    public function __call($method, $params) {
+        if (method_exists($this->mysql, $method)) {
+            return call_user_func_array(array($this->mysql, $method), $params);
+        } else {
+            parent::__call($method, $params);
+        }
+    }
+    
     /**
      * Деструктор класса.
      * Автоматически отключает бота от БД.
      */
     public function __destruct() {
         $this->Disconnect();
+    }
+
+    public function Disconnect() {
+        return $this->mysql->Disconnect();
     }
 
     /**
@@ -41,7 +72,6 @@ class SteelBotDB extends MySQL  {
      * @return bool
      */
     public function Connect() {
-
         $this->dbname   = S::bot()->config['db']['database'];
         $this->username = S::bot()->config['db']['user'];
         $this->password = S::bot()->config['db']['password'];
@@ -50,7 +80,7 @@ class SteelBotDB extends MySQL  {
 		$this->setnames = S::bot()->config['db']['setnames'];
         $this->options_table = S::bot()->config['db']['table_config'];
 
-        parent::Connect();
+        $this->mysql->Connect();
 		
         if ( $this->selectDB($this->dbname)) {
             $this->InstallTable(dirname(__FILE__).'/steelbot_users.sql');
@@ -110,16 +140,6 @@ class SteelBotDB extends MySQL  {
         foreach ($scripts as $script) {
             include $script;
         }
-    }
-
-    /**
-     * Отключение от БД.
-     */
-    public function Disconnect() {
-        if (is_resource($this->dbhandle)) {
-            mysql_close($this->dbhandle);
-        }
-        $this->connected = false;
     }
 
     /**
@@ -437,131 +457,7 @@ class SteelBotDB extends MySQL  {
         $this->query($q);
         return $this->RowsAffected();    
 	}
-
-    /**
-     * Сделать запрос к БД и получить ссылку на mysql-результат.
-     *
-     * @param string $query
-     * @return resource
-     */
-    public function Query($query) {
-        $this->errno = $this->error = false;
-        //echo "\n=======\n";
-        //print_r($query);
-        //echo "\n=======\n";
-        $return = mysql_query($query, $this->dbhandle);
-        $this->errno = mysql_errno($this->dbhandle);
-        $this->error = mysql_error($this->dbhandle);
-
-        // проверка работоспособности сервера
-        if ( $this->errno == self::CR_SERVER_GONE_ERROR ) {
-            try {
-                $this->Disconnect();
-                $this->Connect();
-                $return = mysql_query($query, $this->dbhandle);
-                $this->errno = mysql_errno($this->dbhandle);
-                $this->error = mysql_error($this->dbhandle);
-            } catch (db_exception $e) {
-                S::logger()->add('Mysqlerror: '.$e->getMessage(), 'mysqldb');
-            }
-        }
-
-        if ($this->errno == self::ER_EMPTY_QUERY) {
-            return false;
-        }
-        
-        if ($this->errno) {
-            var_dump($this->errno);
-            throw new db_exception($this->error, $this->errno);
-        }
-        return $return;
-    }
-
-	/**
-	 * Запрос, автоматически экранирующий пользовательские данные
-	 *
-	 * @param string $query
-	 * @param array $data
-	 */
-	public function EscapedQuery($query, $data) {
-		$keys = array_keys($data);
-		$values = array_values($data);
-		
-		foreach ($keys as &$k) {
-			$k = '{'.$k.'}';
-		}
-		foreach ($values as &$v) {
-			$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
-		}
-
-        $query = str_replace($keys, $values, $query);
-         
-		return $this->query( $query );
-	}
-
-	public function FormatQuery($query, $data) {
-		$keys = array_keys($data);
-		$values = array_values($data);
-		
-		foreach ($keys as &$k) {
-			$k = '{'.$k.'}';
-		}
-		foreach ($values as &$v) {
-			$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
-		}
-		
-		return str_replace( $keys, $values, $query);
-	}
-	
-	/**
-	 * Извлечь строку из mysql результата в виде ассоциативного массива
-	 */
-	public function FetchAssoc($r) {
-		return mysql_fetch_assoc($r);
-	}
-	
-	/**
-	 * Извлечь строку из mysql результата в виде неассоциативного массива
-	 */
-	public function FetchRow($r) {
-		return mysql_fetch_row($r);
-	}
-	
-	/**
-	 * Получить количество строк в mysql результате
-	 */
-	public function NumRows($r) {
-		return mysql_num_rows($r);
-	}
-	
-    /**
-     * Сделать запрос к БД, и получить результат в виде единственного значения.
-     *
-     * @param string $query
-     * @return string
-     */
-    public function QueryValue($query) {
-        $result = $this->Query($query);
-        $result = mysql_fetch_array($result);
-        return $result[0];
-    }
-
-    /**
-     * Сделать запрос к БД и получить результат в виде двумерного массива
-     * значений.
-     *
-     * @param string $query
-     * @return array
-     */
-    public function QueryArray($query) {
-        $result = $this->Query($query);        
-		$return = array();
-		while ($row = mysql_fetch_row($result)) {
-			$return[] = $row;
-		}
-		return $return;
-    }
-
+    
     /**
      * Получить массив с именами таблиц для бота.
      *
@@ -581,17 +477,21 @@ class SteelBotDB extends MySQL  {
 		}
     }
 
-    /**
-     * Экранировать опасные для sql запроса символы в строке.
-     *
-     * @param string $str
-     * @return string
-     */
-    public function EscapeString($str) {
-        return mysql_real_escape_string($str, $this->dbhandle);
-    }
-
-    public function RowsAffected() {
-        return mysql_affected_rows($this->dbhandle);
+    public function Query($query, $params = null) {
+        try {
+            return $this->mysql->EscapedQuery($query, $params);
+        } catch (DBException $e) {
+            // проверка работоспособности сервера
+            if ( $e->getCode() == self::CR_SERVER_GONE_ERROR ) {
+                try {
+                    $this->Disconnect();
+                    $this->Connect();
+                    return $this->mysql->EscapedQuery($query, $params);
+                } catch (DBException $e) {
+                    S::logger()->add('MySQLError: '.$e->getCode(), 'mysqldb');
+                    print_r($e);
+                }
+            }
+        }
     }
 }
