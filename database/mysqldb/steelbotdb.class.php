@@ -158,7 +158,7 @@ class SteelBotDB extends SDatabase  {
      * @return int - установленный уровень доступа
      */
     public function CreateUser($user, $access = -1) {
-        $user = self::EscapeString($user);
+        $user = $this->mysql->EscapeString($user);
         if ($access < 0) {
 			$access = S::bot()->config['bot']['user.default_access'];
 		}
@@ -215,7 +215,7 @@ class SteelBotDB extends SDatabase  {
      * @return int
      */
     public function GetUserAccess($user) {
-        $user = self::EscapeString($user);
+        $user = $this->mysql->EscapeString($user);
         $query = "SELECT access FROM ".$this->table_prefix."users WHERE user='$user'";
         $result = $this->QueryValue($query);
         if (mysql_affected_rows( $this->dbhandle )) {
@@ -482,7 +482,7 @@ class SteelBotDB extends SDatabase  {
             return $this->mysql->EscapedQuery($query, $params);
         } catch (DBException $e) {
             // проверка работоспособности сервера
-            if ( $e->getCode() == self::CR_SERVER_GONE_ERROR ) {
+            if ( $e->getCode() == MySQL::CR_SERVER_GONE_ERROR ) {
                 try {
                     $this->Disconnect();
                     $this->Connect();

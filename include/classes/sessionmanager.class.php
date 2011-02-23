@@ -66,7 +66,6 @@ class SessionManager extends SComponent {
     }
 
     public function callHandler($event) {
-        S::logger()->log("Call Handler", 'session_manager');
         $user = $event->sender;
         //$this->sessionGC(1);
         if (!array_key_exists($user, $this->_sessions)) {
