@@ -139,15 +139,15 @@ function Msg($text, $to = false) {
     S::logger()->log("> $to ".$text);
 }
     
-function GetSender() {
+function getSender() {
 	return $this->msgEvent->sender;
 }
 
-function GetMsgText() {
+function getMsgText() {
 	return $this->msgEvent->content;
 }  
 
-function GetAlias() {
+function getAlias() {
     return $this->msgEvent->alias;
 }     
 

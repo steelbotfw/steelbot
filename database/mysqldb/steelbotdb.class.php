@@ -477,9 +477,13 @@ class SteelBotDB extends SDatabase  {
 		}
     }
 
-    public function Query($query, $params = null) {
+    public function Query($query, $params = null, $options = array()) {
         try {
-            return $this->mysql->EscapedQuery($query, $params);
+			$formattedQuery = $this->mysql->formatQuery($query, $params);
+			if (isset($options['showquery']) && $options['showquery']) {
+				echo $formattedQuery."\n";
+			}
+            return $this->mysql->EscapedQuery($formattedQuery, $params);
         } catch (DBException $e) {
             // проверка работоспособности сервера
             if ( $e->getCode() == MySQL::CR_SERVER_GONE_ERROR ) {
@@ -491,7 +495,9 @@ class SteelBotDB extends SDatabase  {
                     S::logger()->add('MySQLError: '.$e->getCode(), 'mysqldb');
                     print_r($e);
                 }
-            }
+            } else {
+				throw $e;
+			}
         }
     }
 }

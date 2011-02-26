@@ -115,21 +115,21 @@ class MySQL  {
 
             $query = str_replace($keys, $values, $query);
         }
-        //echo $query."\n";
 		return $this->query( $query );
 	}
 
 	public function FormatQuery($query, $data) {
-		$keys = array_keys($data);
-		$values = array_values($data);
-		
-		foreach ($keys as &$k) {
-			$k = '{'.$k.'}';
+		if (!is_null($data)) {
+			$keys = array_keys($data);
+			$values = array_values($data);
+			
+			foreach ($keys as &$k) {
+				$k = '{'.$k.'}';
+			}
+			foreach ($values as &$v) {
+				$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
+			}
 		}
-		foreach ($values as &$v) {
-			$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
-		}
-		
 		return str_replace( $keys, $values, $query);
 	}
 	
