@@ -32,6 +32,7 @@ class CommandManager extends SComponent implements ArrayAccess {
 
     /**
      * @since 3.0
+     * @param mixed $command - string or BotCommand
      */
     public function UnregisterCommand($command) {
         if ($command instanceof BotCommand) {
@@ -48,6 +49,17 @@ class CommandManager extends SComponent implements ArrayAccess {
             list($pluginName, $commandName) = explode('/', $command);
             $c = S::bot()->pluginManager[$pluginName][$commandName];
             $this->UnregisterCommand($c);
+        }
+    }
+
+    public function runCommand($command, $event, $params) {
+        if ($command instanceof BotCommand) {
+            $command->Execute($params, $event);
+            
+        } elseif (strpos($command, '/')) {
+            list($pluginName, $commandName) = explode('/', $command);
+            $c = S::bot()->pluginManager[$pluginName][$commandName];
+            $c->Execute($params, $event);
         }
     }
 

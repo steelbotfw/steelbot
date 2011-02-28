@@ -20,7 +20,7 @@ class SessionManager extends SComponent {
 
 	public function pushHandler($handler, $user) {
         if (array_key_exists($user, $this->_sessions)) {
-            S::logger()->log("Pushing new handler for $user...");
+            S::logger()->log("Pushing new handler for $user...", __CLASS__, BaseLog::LEVEL_DEBUG);
             $this->_sessions[$user]->pushHandler($handler);
             return true;
         } else {
@@ -30,8 +30,7 @@ class SessionManager extends SComponent {
 
     public function popHandler($user) {
         if (array_key_exists($user, $this->_sessions)) {
-            $this->_sessions[$user]->popHandler();
-            return true;
+            return $this->_sessions[$user]->popHandler();
         } else {
             return false;
         }
@@ -65,7 +64,7 @@ class SessionManager extends SComponent {
         }
     }
 
-    public function callHandler($event) {
+    public function callHandler($event, $mode = Session::MODE_HANDLE) {
         $user = $event->sender;
         //$this->sessionGC(1);
         if (!array_key_exists($user, $this->_sessions)) {
@@ -73,8 +72,8 @@ class SessionManager extends SComponent {
             $this->SessionStart($user);
         }
 
-        S::logger()->log("Call handler for $user");
-        $this->_sessions[$user]->callHandler($event);
+        S::logger()->log("Call handler for $user", __CLASS__, BaseLog::LEVEL_DEBUG);
+        $this->_sessions[$user]->callHandler($event, $mode);
     }
 
     protected function sessionGC($p) {

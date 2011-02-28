@@ -1,6 +1,10 @@
 <?php 
 class Session extends SComponent {
-    public $user;    
+    public $user;
+    const MODE_HANDLE = 0;
+    const MODE_PUSH = 1;
+    const MODE_POP = 2;
+        
     protected $_handlers = array(),
               $_lastAccess,
               $_durability = 60; //100 seconds
@@ -11,8 +15,11 @@ class Session extends SComponent {
         $this->_lastAccess = time();
 	}
 
-    public function callHandler($event) {
-        call_user_func(end($this->_handlers), $event);
+    /**
+     *
+     */ 
+    public function callHandler($event, $mode = self::MODE_HANDLE) {
+        call_user_func(end($this->_handlers), $event, $mode);
     }
     
 	public function pushHandler($handler) {
