@@ -105,6 +105,15 @@ class Conferences {
             return null;
         }
     }
+
+    public static function isSelfMessage($sender) {
+        list($conf, $nick) = explode('/',$sender);
+        if (isset(self::$objects[$conf])) {
+            return self::$objects[$conf]->nick == $nick;
+        } else {
+            return false;
+        }
+    }
     
 }
 

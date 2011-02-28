@@ -2,7 +2,7 @@
 
 class MUC {
     
-    private $host,
+    public $host,
             $room,
             
             $nick,
