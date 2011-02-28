@@ -11,176 +11,172 @@
 
 class SteelBot extends SComponent {
 
-public $config,
-       $db,
-	   $proto;
+    public $config,
+           $db,
+           $proto;
 
-public $database,
-       $msgdropped = false,
-       $lng,
-       ///$cmdlist = array(),
-                     
-       $msgEvent,
-       ///$cfg,
-       $plugins = array(); 
+    public $database,
+           $msgdropped = false,
+           $lng,
+                         
+           $msgEvent,
+           $plugins = array(); 
 
-private $_timermanager = null,
-        $_eventmanager = null,
-        $_pluginmanager = null,
-        $_commandmanager = null,
-        $_sessionmanager = null;
+    private $_timermanager = null,
+            $_eventmanager = null,
+            $_pluginmanager = null,
+            $_commandmanager = null,
+            $_sessionmanager = null;
 
 			   
-const OPTBOT = 1;
-const OPTPLUGIN = 2;
-const OPTPROTOCOL = 3;
+    const OPTBOT = 1;
+    const OPTPLUGIN = 2;
+    const OPTPROTOCOL = 3;
 
-private $current_plugin = null;
+    private $current_plugin = null;
 
-public function __construct($config) {
-    parent::__construct($config);
-    $this->config = $config;
-    $this->cfg = $config;
+    public function __construct($config) {
+        parent::__construct($config);
+        $this->config = $config;
+        $this->cfg = $config;
 
-	include_once STEELBOT_DIR.'/database/'.$config['db']['engine'] .'/steelbotdb.class.php';
-	include_once STEELBOT_DIR.'/protocol/'.$config['proto']['engine'].'/proto.class.php';
+        include_once STEELBOT_DIR.'/database/'.$config['db']['engine'] .'/steelbotdb.class.php';
+        include_once STEELBOT_DIR.'/protocol/'.$config['proto']['engine'].'/proto.class.php';
 
-    $this->_timermanager = new TimerManager($this);
-    $this->_eventmanager = new EventManager($this);
-    foreach (array(
-        'EVENT_RECONNECT',
-        'EVENT_EXIT',
-        'EVENT_PRE_PLUGIN_LOAD',
-        'EVENT_PLUGIN_LOADED',
-        'EVENT_CMD_ACCESS_CHANGED',
-        'EVENT_CMD_REGISTERED',
-        'EVENT_CMD_UNREGISTERED',
-        'EVENT_CMD_LOADED',
-        'EVENT_CMD_DISABLED',
-        'EVENT_CMD_ENABLED',
-        'EVENT_TIMER_ADDED',
-        'EVENT_BOT_LOADED',
-        'EVENT_HELP_NOTFOUND',
-    ) as $event) {
-        $this->eventManager->AddEventType($event);
-    }
-    
-    $this->_pluginmanager = new PluginManager($this);
-    $this->_commandmanager = new CommandManager($this);
-    $this->_sessionmanager = new SessionManager($this);
-    $this->db = new SteelBotDB($this);
-	$this->proto = new Proto($this);
-    
-    
-}
-
-public function getTimerManager() {
-    return $this->_timermanager;
-}
-public function getEventManager() {
-    return $this->_eventmanager;
-}
-
-public function getPluginManager() {
-    return $this->_pluginmanager;
-}
-
-public function getCommandManager() {
-    return $this->_commandmanager;
-}
-
-public function getSessionManager() {
-    return $this->_sessionmanager;
-}
-
-public function getPlugin() {
-    return $this->_pluginmanager->getPluginInstance();
-}
-
-function Init() {
-
-	// i18n    
-	//self::$lng = new SteelBotLng(self::$cfg['language']); 
-	/* $files = glob(STEELBOT_DIR.'/include/lang/*.php');
-	foreach ($files as $langfile) {
-		S::logger()->log( "Lang: ".basename($langfile)." ");
-		self::$lng->AddDict($langfile);
-	}
-	*/
-    S::bot()->db->connect();
-    
-    // загрузка плагинов
-    foreach ($this->config['plugins'] as $k=>$v) {
-        if (is_array($v)) {
-            $pluginName = $k;
-            $params = $v;
-        } else {
-            $pluginName = $v;
-            $params = array();
+        $this->_timermanager = new TimerManager($this);
+        $this->_eventmanager = new EventManager($this);
+        foreach (array(
+            'EVENT_RECONNECT',
+            'EVENT_EXIT',
+            'EVENT_PRE_PLUGIN_LOAD',
+            'EVENT_PLUGIN_LOADED',
+            'EVENT_CMD_ACCESS_CHANGED',
+            'EVENT_CMD_REGISTERED',
+            'EVENT_CMD_UNREGISTERED',
+            'EVENT_CMD_LOADED',
+            'EVENT_CMD_DISABLED',
+            'EVENT_CMD_ENABLED',
+            'EVENT_TIMER_ADDED',
+            'EVENT_BOT_LOADED',
+            'EVENT_HELP_NOTFOUND',
+        ) as $event) {
+            $this->eventManager->AddEventType($event);
         }
-
-        if ($filename = $this->pluginManager->pluginAvailable($pluginName))
-        {
-            $this->pluginManager->LoadPlugin($filename, $params);
-        }  else {
-            throw new BotException("Unknown plugin: $pluginName", 0);
-        }      
-    }        
-}
-
-function Msg($text, $to = false) {
-    if (!$to) {
-        $to = $this->msgEvent->sender;        
-    }	
-	$event = new Event(EVENT_PRE_MSG_SEND, array('content'=>$text, 'to'=>$to));
-	$this->eventManager->EventRun( $event );
-    $this->proto->msg($event->content, $event->to);    
-    $ev = $this->eventManager->EventRun( new Event(EVENT_MSG_SENT, array('text'=>$text, 'to'=>$to)) );    
-    S::logger()->log("> $to ".$text);
-}
-    
-function getSender() {
-	return $this->msgEvent->sender;
-}
-
-function getMsgText() {
-	return $this->msgEvent->content;
-}  
-
-function getAlias() {
-    return $this->msgEvent->alias;
-}     
-
-/**
- * @desc Регистрирует пользовательскую команду в системе.
- *
- * @param string $command - имя команды
- * @param string $func - функция, которая будет вызвана при получении этой команды
- * @param int $access - уровень доступа к команде
- * @param string $helpstr - текст, который будет отправляться при обращении
- * к помощи по данной команде
- * @param bool $create_alias - создать алиас с именем команды. Устанавливается в
- * false, если у команды должно быть другое название.
- *
- * @return BotCommand object
- *
- */
-function RegisterCmd($command, $func, $access = 1, $helpstr = null, $create_alias = true) {
         
-    if (!($command instanceof BotCommand)) {
-       $command = $this->commandManager->BuildCommand($command, $func, $access, $helpstr);       
+        $this->_pluginmanager = new PluginManager($this);
+        $this->_commandmanager = new CommandManager($this);
+        $this->_sessionmanager = new SessionManager($this);
+        $this->db = new SteelBotDB($this);
+        $this->proto = new Proto($this);
     }
-    $this->commandmanager->RegisterCommand($command);
 
-    if ($create_alias) {
-        $this->commandManager->createAlias($command, $command->name);
+    public function getTimerManager() {
+        return $this->_timermanager;
     }
-    return $command;
-}
+    public function getEventManager() {
+        return $this->_eventmanager;
+    }
 
-function GetVersion() {
-    return STEELBOT_VERSION;
-}
+    public function getPluginManager() {
+        return $this->_pluginmanager;
+    }
+
+    public function getCommandManager() {
+        return $this->_commandmanager;
+    }
+
+    public function getSessionManager() {
+        return $this->_sessionmanager;
+    }
+
+    public function getPlugin() {
+        return $this->_pluginmanager->getPluginInstance();
+    }
+
+    function Init() {
+
+        // i18n    
+        //self::$lng = new SteelBotLng(self::$cfg['language']); 
+        /* $files = glob(STEELBOT_DIR.'/include/lang/*.php');
+        foreach ($files as $langfile) {
+            S::logger()->log( "Lang: ".basename($langfile)." ");
+            self::$lng->AddDict($langfile);
+        }
+        */
+        S::bot()->db->connect();
+        
+        // загрузка плагинов
+        foreach ($this->config['plugins'] as $k=>$v) {
+            if (is_array($v)) {
+                $pluginName = $k;
+                $params = $v;
+            } else {
+                $pluginName = $v;
+                $params = array();
+            }
+
+            if ($filename = $this->pluginManager->pluginAvailable($pluginName))
+            {
+                $this->pluginManager->LoadPlugin($filename, $params);
+            }  else {
+                throw new BotException("Unknown plugin: $pluginName", 0);
+            }      
+        }        
+    }
+
+    function Msg($text, $to = false) {
+        if (!$to) {
+            $to = $this->msgEvent->sender;        
+        }	
+        $event = new Event(EVENT_PRE_MSG_SEND, array('content'=>$text, 'to'=>$to));
+        $this->eventManager->EventRun( $event );
+        $this->proto->msg($event->content, $event->to);    
+        $ev = $this->eventManager->EventRun( new Event(EVENT_MSG_SENT, array('text'=>$text, 'to'=>$to)) );    
+        S::logger()->log("> $to ".$text);
+    }
+        
+    function getSender() {
+        return $this->msgEvent->sender;
+    }
+
+    function getMsgText() {
+        return $this->msgEvent->content;
+    }  
+
+    function getAlias() {
+        return $this->msgEvent->alias;
+    }     
+
+    /**
+     * @desc Регистрирует пользовательскую команду в системе.
+     *
+     * @param string $command - имя команды
+     * @param string $func - функция, которая будет вызвана при получении этой команды
+     * @param int $access - уровень доступа к команде
+     * @param string $helpstr - текст, который будет отправляться при обращении
+     * к помощи по данной команде
+     * @param bool $create_alias - создать алиас с именем команды. Устанавливается в
+     * false, если у команды должно быть другое название.
+     *
+     * @return BotCommand object
+     *
+     */
+    function RegisterCmd($command, $func, $access = 1, $helpstr = null, $create_alias = true) {
+            
+        if (!($command instanceof BotCommand)) {
+           $command = $this->commandManager->BuildCommand($command, $func, $access, $helpstr);       
+        }
+        $this->commandmanager->RegisterCommand($command);
+
+        if ($create_alias) {
+            $this->commandManager->createAlias($command, $command->name);
+        }
+        return $command;
+    }
+
+    function GetVersion() {
+        return STEELBOT_VERSION;
+    }
 
 /*
 function AddDependence($dep, $version, $type='plugin') {
@@ -252,17 +248,17 @@ function FindAlias($plugin, $command) {
 
  */
 
-static function ExportInfo($name, $version, $author) {
-    $info = array(
-        'name' => $name,
-        'author' => $author,
-        'version' => $version
-    );
-    $plugin = S::bot()->plugin;
-    if (!is_null($plugin)) {
-            S::bot()->plugin->ExportInfo($info);
+    static function ExportInfo($name, $version, $author) {
+        $info = array(
+            'name' => $name,
+            'author' => $author,
+            'version' => $version
+        );
+        $plugin = S::bot()->plugin;
+        if (!is_null($plugin)) {
+                S::bot()->plugin->ExportInfo($info);
+        }
     }
-}
 
 /**
 
@@ -302,22 +298,22 @@ function DbIgnoredOption($option) {
 }
 
 
-/**
- * @desc Установливает пользователю уровень доступа к боту
- *
- * @param string $user - id пользователя
- * @param int $level - уровень доступа от 1 до 100 
- * @return boolean
- */
-function SetUserAccess($user,$level) {
-    if (!is_numeric($level) || $level > 100) {
-        S::logger()->log("Incorrect users access level: $level");     
-        return false;
-    } else {
-        $this->db->SetUserAccess($user, $level);
-        return true;
-    }    
-}
+    /**
+     * @desc Установливает пользователю уровень доступа к боту
+     *
+     * @param string $user - id пользователя
+     * @param int $level - уровень доступа от 1 до 100 
+     * @return boolean
+     */
+    function SetUserAccess($user,$level) {
+        if (!is_numeric($level) || $level > 100) {
+            S::logger()->log("Incorrect users access level: $level");     
+            return false;
+        } else {
+            $this->db->SetUserAccess($user, $level);
+            return true;
+        }    
+    }
 
 	/**
 	 * @desc Возвращает уровень доступа, установленный для пользователя. Если 
@@ -459,19 +455,19 @@ function ParseMessage() {
     usleep((int)SteelBot::$cfg['delaylisten']*1000000);
 }
 
-/**
- * @desc Последовательно вызывает все выходные функции, а затем завершает работу
- * скрипта.
- *
- */
-function DoExit() {
-    S::logger()->log("Exit requested");
+    /**
+     * @desc Последовательно вызывает все выходные функции, а затем завершает работу
+     * скрипта.
+     *
+     */
+    function DoExit() {
+        S::logger()->log("Exit requested");
 
-    /* ## if (self::$cfg['save_actual_timers']) {
-        self::SaveTimers();
-    } */
-    S::bot()->eventManager->EventRun( new Event(EVENT_EXIT) );
-    exit("\n");
-}
+        /* ## if (self::$cfg['save_actual_timers']) {
+            self::SaveTimers();
+        } */
+        S::bot()->eventManager->EventRun( new Event(EVENT_EXIT) );
+        exit("\n");
+    }
 
 }

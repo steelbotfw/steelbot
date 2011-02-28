@@ -6,9 +6,12 @@ class TimerManager extends SComponent {
 			  $timerIds,
 			  $timers = array(),
 			  $nextTimer,
-			  $maxtimerId;
+			  $maxtimerId,
+
+              $_bot = null;
 
 	public function __construct($bot) {
+        $this->_bot = $bot;
 		parent::__construct($bot);
 	}
 
@@ -102,14 +105,14 @@ class TimerManager extends SComponent {
      *
      */
     function SaveTimers() {
-        //slog::add('core',"Saving timers ... ", LOG_CORE);
+        S::logger()->log("Saving timers ... ", 'core', BaseLog::LEVEL_NOTICE);
         $timers_file = STEELBOT_DIR.DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.
                 Proto::BotID().'.timers';
         if ( file_put_contents( $timers_file, serialize($this->timers)) ) {
-            //slog::result("OK");
+            S::logger()->log("OK", 'timermanager', BaseLog::LEVEL_NOTICE);
             return true;
         } else {
-            //slog::result("ERROR");
+            S::logger()->log("ERROR", 'timermanager', BaseLog::LEVEL_NOTICE);
             return false;
         }
     }
@@ -124,7 +127,7 @@ function LoadTimers($filename = false) {
         $filename = STEELBOT_DIR.DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.
             Proto::BotID().'.timers';
     }
-    //slog::add('core', 'Loading timers '.$filename."... ", LOG_CORE);
+    S::logger()->log("Loading timers from $filename ... ", 'timermanager', BaseLog::LEVEL_NOTICE);
     $count = 0;
 
     if ( is_readable($filename) ) {
@@ -139,16 +142,16 @@ function LoadTimers($filename = false) {
                         $count++;
                     }
                 } else {
-                    slog::add('core', "   timer skipped: ($time) ", LOG_CORE);
+                    //slog::add('core', "   timer skipped: ($time) ", LOG_CORE);
                 }
             }
-            slog::result(" OK");
+            //slog::result(" OK");
         } else {
-            slog::result(" no timers");
+            //slog::result(" no timers");
         }
         unlink($filename);
     } else {
-        slog::result("OK");
+        //slog::result("OK");
     }
     return $count;
             

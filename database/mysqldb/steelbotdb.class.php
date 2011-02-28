@@ -114,7 +114,7 @@ class SteelBotDB extends SDatabase  {
 	    $sql = file_get_contents($filename);
         $basename = basename($filename);
         
-        S::logger()->log("Installing table from $basename ... ", 'mysqldb');
+        S::logger()->log("Installing table from $basename ... ", 'mysqldb', BaseLog::LEVEL_DEBUG);
 	    if ($sql) {
                   
                   $sql = str_replace('@', $this->table_prefix, $sql);

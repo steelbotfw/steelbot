@@ -6,24 +6,31 @@
  * @author N3x^0r
  * @version 1.0
  * 
- * 2010-04-25
+ * 2011-02-28
  *
  */
 
-include_once dirname(__FILE__)."/../interfaces/isteelbotlog.interface.php";
-
 class BaseLog {
-    
-   private $last_ignored = false;
 
-   public function __construct($bufferSize = 30) {
-		$this->log("Logger ".__CLASS__." started at ".date("r"));
-		set_error_handler(array($this, 'errorHandler'));
-   }   
+    const LEVEL_DEBUG = 4;
+    const LEVEL_NOTICE = 3;
+    const LEVEL_WARNING = 2;
+    const LEVEL_ERROR = 1;
+    const LEVEL_NONE = 0;
+    
+    private $last_ignored = false;
+
+    protected $_rules = array();
+
+    public function __construct($rules = array()) {
+        $this->_rules = $rules;
+        $this->log("Logger ".__CLASS__." started at ".date("r"));
+        set_error_handler(array($this, 'errorHandler'));
+    }   
 
    /**
     * @deprecated
-    */
+    *
    public function add($name, $msg, $code = '000', $sender = false, $level = LOG_LEVEL_NOTICE) {
         if (!$this->checkRule($name, $level, $code)) {
 		    $this->last_ignored = true;
@@ -42,31 +49,22 @@ class BaseLog {
         $logmsg = $this->format($date, $sender, $msg, $name.@str_repeat(' ', $offset), '');
         echo "\n".$logmsg;
         return true;  
-    }
+    } */
 
 	/**
 	 * @param string $msg
 	 * @param string $component
 	 */
-    public function log($msg, $component = null, $level = LOG_LEVEL_NOTICE) {
-		echo date("[H:i:s] ");
-		if (!is_null($component)) {
-			echo "[$component] ";
-		}
-		echo $msg."\n";
-    }
-
-    /**
-     * @param srting $date
-     * @param string $name
-     * @param string $msg
-     * @param string $code
-     * @param string $sender
-     */
-    public function format($date, $name, $msg, $code, $sender) {	
-        return str_replace( array('%d', '%u', '%m', '%n', '%c'),
-                               array($date, $sender, $msg, $name, $code), 
-                                 SteelBot::$cfg['log.msgformat'] );
+    public function log($msg, $component = null, $level = self::LEVEL_NOTICE) {
+        if ($this->checkRule($component, $level)) {
+            echo date("[H:i:s] ");
+            if (!is_null($component)) {
+                echo "[$component] ";
+            }
+            echo $msg."\n";
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -103,18 +101,11 @@ class BaseLog {
 		}
    }
 
-    private function checkRule($name, $level, $code = '000') {
-	    if (in_array($code, SteelBot::$cfg['log.exclude_types'])) {
-            return false;
-        } elseif (isset(SteelBot::$cfg['log.rules'][$name]) ) {
-			if (SteelBot::$cfg['log.rules'][$name] < $level) {
-				return false;
-			} else {
-				return true;
-			}
-		} elseif (SteelBot::$cfg['log.rules']['*'] < $level) {
-			return false;
-		}
-		return true;
+    private function checkRule($name, $level) {
+        if (is_null($name) || !isset($this->_rules[$name])) {
+            $name = '*';
+        }
+        return $this->_rules[$name] >= $level;
+		
    }   
 }

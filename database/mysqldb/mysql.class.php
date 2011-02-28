@@ -129,8 +129,9 @@ class MySQL  {
 			foreach ($values as &$v) {
 				$v = "'".mysql_real_escape_string($v, $this->dbhandle)."'";
 			}
+            return str_replace( $keys, $values, $query);
 		}
-		return str_replace( $keys, $values, $query);
+		return $query;
 	}
 	
 	/**

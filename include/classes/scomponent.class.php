@@ -2,10 +2,17 @@
 
 class SComponent {
 
+    public $logger = array(
+        'level' => BaseLog::LEVEL_WARNING
+    );
+
 	public function __construct($bot) {
 		$config = $this->config();
-		
 	}
+    
+    public function log($message) {
+        S::logger()->log($message, '', $this->logger['level']);
+    }
 
 	public function config() {
 		return array();

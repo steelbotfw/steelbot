@@ -21,7 +21,7 @@ class PluginManager extends SComponent implements ArrayAccess {
                     $plugins = $this->FindPlugins($path);
                     $this->plugins = S::mergeArray($this->plugins, $plugins);
                 } else {
-                    S::logger()->log("Invalid path: $path");
+                    S::logger()->log("Invalid path: $path", __CLASS__, BaseLog::LEVEL_WARNING);
                 }
             }
         }
@@ -66,7 +66,6 @@ class PluginManager extends SComponent implements ArrayAccess {
     }
 
     function FindPlugins($dir) {
-        S::logger()->log("Finding plugins in $dir");
         $names = glob($dir.'/*');
         $result = array();
         foreach ($names as $fileName) {
@@ -74,6 +73,9 @@ class PluginManager extends SComponent implements ArrayAccess {
                 $result += $this->FindPlugins($fileName);
             } elseif (is_file($fileName) && substr($fileName, -11) == '.plugin.php') {
                 $name = str_replace('.plugin.php', '', basename($fileName));
+                S::logger()->log("Plugin found: $fileName", __CLASS__, BaseLog::LEVEL_DEBUG)
+                or
+                S::logger()->log("Plugin found: $name", __CLASS__, BaseLog::LEVEL_NOTICE);
                 $result[$name] = realpath($fileName);
             }
         }
@@ -81,7 +83,7 @@ class PluginManager extends SComponent implements ArrayAccess {
     }
 
     public function LoadPlugin($filename, $params) {
-        S::logger()->log("Loading $filename...");
+        S::logger()->log("Loading $filename...", __CLASS__, BaseLog::LEVEL_DEBUG);
         $name = str_replace('.plugin.php', '', basename($filename) );
         
         if ($this->PluginLoaded($name)) {

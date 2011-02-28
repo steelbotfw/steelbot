@@ -17,9 +17,10 @@ class S {
 		$cfg = self::mergeArray($cfg, $steelbotConfig);
 		$cfg = self::mergeArray($cfg, $config);
 
-        self::$_logger = new $cfg['bot']['log.class']; 
+        self::$_logger = new $cfg['bot']['log.class']($cfg['bot']['log.rules']) ;
+       
 		self::$_app = new Steelbot($cfg);
-        self::$_app->init();		
+        self::$_app->init();
 	}
 
 	public static function mergeArray($a,$b)

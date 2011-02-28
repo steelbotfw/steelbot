@@ -19,19 +19,6 @@ return array(
 			  // cинтаксис аналогичен переменным в php функции date()
 			  // переменные: см. http://php.net/date
 			  'log.dateformat' => 'H:i:s',
-			     
-			  /**
-			   * формат сообщения лога
-			   * 
-			   * переменные:
-			   *     %d - дата и время (см. опцию log => dateformat)
-			   *     %u - jid, отправивший сообщение 
-			   *     %m - сообщение лога
-			   *     %n - группа записи (например, название плагина)
-			   *     %c - код сообщения
-			   * 
-			   */
-			  'log.msgformat' => '[%d] %c %n %u %m',
 
 			  /**
 			   * Класс, используемый для логирования
@@ -41,30 +28,30 @@ return array(
 			  /**
 			   * Правила вывода сообщений лога
 			   * 
-			   * По умолчанию сообщения лога имеют уровень LOG_LEVEL_NOTICE
+			   * По умолчанию сообщения лога имеют уровень BaseLog::LEVEL_NOTICE
 			   *
 			   * Возможные уровни:
-			   * LOG_LEVEL_INFO     - выводятся все сообщения
-			   * LOG_LEVEL_NOTICE  - выводятся замечания 
-			   * LOG_LEVEL_WARNING - выводятся предупреждения
-			   * LOG_LEVEL_ERROR   - выводятся ошибки
-			   * LOG_LEVEL_NONE    - ничего не выводится
+			   * BaseLog::LEVEL_INFO     - выводятся все сообщения
+			   * BaseLog::LEVEL_NOTICE   - выводятся замечания 
+			   * BaseLog::LEVEL_WARNING  - выводятся предупреждения
+			   * BaseLog::LEVEL_ERROR    - выводятся ошибки
+			   * BaseLog::LEVEL_NONE     - ничего не выводится
 			   */
 			  'log.rules' => array(
 				 // уровень вывода для steelbot				  
-				 'steelbot' => LOG_LEVEL_NOTICE,
+				 'steelbot' => BaseLog::LEVEL_NOTICE,
 
 				 // уровень вывода для ядра бота
-				 'core' => LOG_LEVEL_NOTICE,
+				 'core' => BaseLog::LEVEL_NOTICE,
 
 				 // уровень вывода для сообщений логгера				 
-				 'logger' => LOG_LEVEL_WARNING,
+				 'logger' => BaseLog::LEVEL_WARNING,
 
 				 // уровень вывода для интерпретатора PHP
-				 'PHP' => LOG_LEVEL_WARNING,
+				 'PHP' => BaseLog::LEVEL_WARNING,
 
 				 // уровень вывода для всех остальных модулей				 
-				 '*' => LOG_LEVEL_NOTICE
+				 '*' => BaseLog::LEVEL_NOTICE
 			  ),
 			  			  
 			  /**

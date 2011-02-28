@@ -17,7 +17,7 @@ error_reporting(E_ALL);
 
 echo 'SteelBot v. '.STEELBOT_VERSION."\n\n";
 
-define('LOG_LEVEL_INFO', 4);
+define('LOG_LEVEL_DEBUG', 4);
 define('LOG_LEVEL_NOTICE', 3);
 define('LOG_LEVEL_WARNING', 2);
 define('LOG_LEVEL_ERROR', 1);
@@ -40,15 +40,9 @@ function __autoload($classname) {
 	}
 }
 
-// interfaces
-foreach (glob(STEELBOT_DIR.'/include/interfaces/*.interface.php') as $in) {
-	include_once $in;
-}
-
 if (!isset($config)) {
 	die('Configuration is not specified');
 }
-
 
 require_once(dirname(__FILE__).'/include/system.check.php');
 CheckSystem($config);
@@ -57,7 +51,6 @@ S::init($config);
 
 // common functions
 require_once STEELBOT_DIR.'/include/common.php';
-
 
 /*
 if ($cfg['db.use_config']) {

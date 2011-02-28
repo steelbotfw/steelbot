@@ -53,9 +53,10 @@ class CommandManager extends SComponent implements ArrayAccess {
 
     public function CreateAlias($command, $alias) {
         if (array_key_exists($alias, $this->aliases)) {
-            throw new BotException("Alias '$alias' already exists", 0);
+            throw new BotException("Alias '$alias' already bind to ".
+                get_class($this->aliases[$alias]), 0);
         }
-        S::logger()->log("Creating alias $alias");
+        S::logger()->log("Creating alias $alias", __CLASS__, BaseLog::LEVEL_DEBUG);
         $this->aliases[$alias] = $command;
         return $this;
     }

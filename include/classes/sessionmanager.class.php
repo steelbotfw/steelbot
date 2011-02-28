@@ -7,7 +7,7 @@ class SessionManager extends SComponent {
     
 	public function __construct($bot) {
 		parent::__construct($bot);
-        S::logger()->log("Session Manager starting...", 'session_manager');
+        S::logger()->log("Session Manager starting...", __CLASS__, BaseLog::LEVEL_DEBUG);
 	}    
 
     public function setDefaultHandler($handler) {
