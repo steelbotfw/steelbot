@@ -126,13 +126,18 @@ class SteelBot extends SComponent {
 
     function Msg($text, $to = false) {
         if (!$to) {
-            $to = $this->msgEvent->sender;        
+            $to = $this->msgEvent->sender;
+            if (empty($to)) {
+                S::logger()->log("Can't determine message sender",'steelbot', BaseLog::LEVEL_WARNING);
+                return false;
+            }        
         }	
         $event = new Event(EVENT_PRE_MSG_SEND, array('content'=>$text, 'to'=>$to));
         $this->eventManager->EventRun( $event );
         $this->proto->msg($event->content, $event->to);    
         $ev = $this->eventManager->EventRun( new Event(EVENT_MSG_SENT, array('text'=>$text, 'to'=>$to)) );    
         S::logger()->log("> $to ".$text);
+        return true;
     }
         
     function getSender() {
