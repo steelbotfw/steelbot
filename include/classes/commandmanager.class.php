@@ -33,6 +33,7 @@ class CommandManager extends SComponent implements ArrayAccess {
     /**
      * @since 3.0
      * @param mixed $command - string or BotCommand
+     * @todo specify the behavior of this command
      */
     public function UnregisterCommand($command) {
         if ($command instanceof BotCommand) {
@@ -41,7 +42,7 @@ class CommandManager extends SComponent implements ArrayAccess {
                     unset($this->aliases[$k]);
                 }
             }
-            $c->plugin->DelCommand($command->name);
+            //$c->plugin->DelCommand($command->name);
             S::bot()->eventManager->EventRun( new Event(EVENT_CMD_UNREGISTERED,
             array('command' => $command)));
             
