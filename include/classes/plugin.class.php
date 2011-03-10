@@ -47,8 +47,6 @@ class Plugin extends SComponent implements ArrayAccess{
         }
     }
     
-
-    
     public function AddDependence($dep, $version, $type) {
         switch ($type) {
             case 'plugin':

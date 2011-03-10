@@ -388,77 +388,7 @@ function DbIgnoredOption($option) {
             )));
         }    
         return true;    
-}
-
-/*
-function Connect() {
-    if ($p = Proto::Connect() ) {
-        S::logger()->log( "Connected", LOG_CONNECTED);
-        self::EventRun( new Event(EVENT_CONNECTED) );    
-    } else {
-        S::logger()->log( "Connection error", LOG_CONNECTION_ERROR);
     }
-    
-    return $p;
-}
-
-
-function ParseMessage() {
-    self::$msgdropped = false;
-    $message = Proto::GetMessage();
-    
-    switch ($message['type']) {
-        case 'message':
-            unset($message['type']);
-            self::$sender = $message['sender'];
-            self::$content = $message['content'];
-            S::logger()->log( self::$content, LOG_MSG_RECIEVED, self::$sender);
-            self::EventRun(new Event(EVENT_MSG_RECEIVED, $message));
-            if (self::$msgdropped) {
-				self::EventRun( new Event(EVENT_MSG_HANDLED, $message) );
-			} else {
-				self::EventRun( new Event(EVENT_MSG_UNHANDLED, $message) );
-			}
-			self::$msgdropped = false;
-			self::$sender = null;
-			self::$content = null;
-			self::$alias = null;
-			break;
-            
-        case 'authrequest':
-            unset($message['type']);
-            self::EventRun(new Event(EVENT_AUTH_REQUEST, $message));
-            break;
-            
-        case 'userstatus':
-            unset($message['type']);
-            S::logger()->log( "Presence: {$message['sender']} [{$message['show']}] {$message['status']}");
-            self::EventRun(new Event(EVENT_USR_STATUS, $message));
-            break;
-            
-        case 'error':
-            S::logger()->log( "error from proto: ".Proto::Error());
-            break;
-         
-            
-        case false:
-		return;
-            break;
-               
-        default:
-            if (isset($message['event'])) { //генерация специфичного для протокола события
-                self::EventRun(new Event(constant($message['event']), $message) );
-                
-            } else {
-                S::logger()->log( "Unknown message from server: '".$message['type']."'");
-                var_dump($message);
-            }
-            break;
-            
-                    
-    }
-    usleep((int)SteelBot::$cfg['delaylisten']*1000000);
-}
 
     /**
      * @desc Последовательно вызывает все выходные функции, а затем завершает работу

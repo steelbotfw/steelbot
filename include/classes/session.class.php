@@ -16,7 +16,8 @@ class Session extends SComponent {
 	}
 
     /**
-     *
+     * @param Event $event
+     * @param int $mode
      */ 
     public function callHandler($event, $mode = self::MODE_HANDLE) {
         call_user_func(end($this->_handlers), $event, $mode);

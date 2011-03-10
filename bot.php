@@ -30,7 +30,7 @@ if (!isset($argv)) {
 	$argv = array(__FILE__);
 }
 
-function __autoload($classname) {
+function SteelbotAutoloader($classname) {
 	$name = mb_strtolower($classname);
 	if (file_exists(STEELBOT_DIR."/include/classes/$name.class.php")) {
 		include STEELBOT_DIR."/include/classes/$name.class.php";
@@ -39,6 +39,8 @@ function __autoload($classname) {
 		return false;
 	}
 }
+
+spl_autoload_register('SteelbotAutoloader');
 
 if (!isset($config)) {
 	die('Configuration is not specified');
