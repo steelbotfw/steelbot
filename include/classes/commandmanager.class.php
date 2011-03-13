@@ -65,6 +65,7 @@ class CommandManager extends SComponent implements ArrayAccess {
     }
 
     public function CreateAlias($command, $alias) {
+        $alias = mb_strtolower($alias, 'utf-8');
         if (array_key_exists($alias, $this->aliases)) {
             throw new BotException("Alias '$alias' already bind to ".
                 get_class($this->aliases[$alias]), 0);
@@ -136,6 +137,7 @@ class CommandManager extends SComponent implements ArrayAccess {
 	 */
 	public function offsetExists($offset)
 	{
+        $offset = mb_strtolower($offset, 'utf-8');
         return isset($this->aliases[$offset]);
 	}
 
@@ -147,6 +149,7 @@ class CommandManager extends SComponent implements ArrayAccess {
 	 */
 	public function offsetGet($offset)
 	{
+        $offset = mb_strtolower($offset, 'utf-8');
         return isset($this->aliases[$offset]) ? $this->aliases[$offset] : null;
 	}
 
@@ -168,7 +171,7 @@ class CommandManager extends SComponent implements ArrayAccess {
 	 */
 	public function offsetUnset($offset)
 	{
-        unset( $this->aliases[$cmdname] );
+        unset( $this->aliases[$offset] );
 	}
 
 }

@@ -80,6 +80,8 @@ class BotCommand extends SComponent {
                 throw new BotException("Function ".S::func2str($callback)." does not exists", ERR_FUNC);
             }
         }
+
+        return true;
     }
    
 }
