@@ -9,8 +9,6 @@
  * 
  */
 
-//SteelBot::ExportInfo('help', '1.0.0', 'nexor'); 
-//SteelBot::AddDependence('steelbot', '2.1.2', 'bot');
 S::bot()->RegisterCmd( SteelBotHelp::$helpAlias, array('SteelBotHelp', 'help'), 1, 'help - вывести помощь');
 S::bot()->eventManager->RegisterEventHandler(EVENT_MSG_UNHANDLED, array('SteelBotHelp', 'notfound'));
 
@@ -33,8 +31,7 @@ class SteelBotHelp {
 				}	
 				S::bot()->Msg( "Доступные команды: \n".implode("\n",$helpstr) );
 		} else {
-            S::bot()->Msg("Help for command under construction");
-           //self::CmdHelp($val); 
+            self::CmdHelp($params); 
 		} 
 	}
 
@@ -43,20 +40,18 @@ class SteelBotHelp {
 	 *
 	 * @param string $cmd - имя команды
 	 */
-	public static function CmdHelp($cmd) {
-        /*
-        if (array_key_exists($cmd, Steelbot::$aliases)) {
-			if ( Steelbot::$aliases[$cmd]->GetAccess() <= Steelbot::GetUserAccess() ) {
-				$msg = Steelbot::$aliases[$cmd]->GetHelp(BotCommand::HELP_FULL, $cmd);
-				Steelbot::Msg( $msg );
+	public static function CmdHelp($alias) {
+        
+        if (isset(S::bot()->commandManager[$alias])) {
+			if ( S::bot()->commandManager[$alias] ->GetAccess() <= S::bot()->GetUserAccess() ) {
+				$msg = S::bot()->commandManager[$alias]->getHelpFull($alias);
+				S::bot()->Msg( $msg );
 			} else {
-				Steelbot::Msg( LNG(LNG_CMDNOACCESS) );
+				S::bot()->Msg( "Недостаточно прав для чтения $alias" );
 			}
 		} else {
-			SteelBot::EventRun( new Event(EVENT_HELP_NOTFOUND) );
-			Steelbot::Msg( LNG( LNG_HELP_NOTFOUND, array('alias'=>$cmd ) ));
+			S::bot()->Msg( "Команда $alias не найдена" );
 		}
-        * */
 	}
 
     public static function notfound($event) {
