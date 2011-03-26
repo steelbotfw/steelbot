@@ -12,7 +12,8 @@ require_once dirname(__FILE__).'/mysql.class.php';
  *
  */
 class SteelBotDB extends SDatabase  {
-	private $mysql;
+	private $mysql,
+		$_wait_timeout = 28800;
 
     public function __construct($bot) {
         parent::__construct($bot);
@@ -79,6 +80,7 @@ class SteelBotDB extends SDatabase  {
         $this->host = S::bot()->config['db']['host'];
 		$this->setnames = S::bot()->config['db']['setnames'];
         $this->options_table = S::bot()->config['db']['table_config'];
+	$this->_wait_timeout = S::bot()->config['db']['option.wait_timeout'];
 
         $this->mysql->Connect();
 		
@@ -95,6 +97,10 @@ class SteelBotDB extends SDatabase  {
             $this->InstallTable(dirname(__FILE__).'/steelbot_aliases.sql');
             $this->UpdateTable('aliases');
 
+	    if ($this->_wait_timeout)
+	    {
+		    $this->query("SET wait_timeout=".(string)(int)$this->_wait_timeout);
+	    }
             if (class_exists('Event')) {
                 S::bot()->eventManager->EventRun(new Event(EVENT_DB_CONNECTED, array('dbname'=>$this->dbname)));
             } else {

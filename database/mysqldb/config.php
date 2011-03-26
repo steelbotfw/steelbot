@@ -29,6 +29,8 @@ return array(
 		'ignore_config_options' => array(
 			'/^table_prefix$/', // префикс названий таблиц
 			'/^mysql_\S+/', // все опции mysql
-		)
+		),
+
+		'option.wait_timeout' => 28800
 	)
 );
