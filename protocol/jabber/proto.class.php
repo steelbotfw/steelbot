@@ -215,7 +215,7 @@ public function SetXStatus($status) {
 }
 
 public function BotId() {
-    return $this->config['jid'];
+    return $this->_config['jid'];
 }
 
 public function PresenceHandler($event) {

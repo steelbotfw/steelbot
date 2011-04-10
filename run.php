@@ -1,7 +1,7 @@
 <?php
 
 define('APP_DIR', dirname(__FILE__));
-define('STEELBOT_DIR', realpath("./"));
+define('STEELBOT_DIR', dirname(__FILE__).'/steelbot3');
 
 $config = array(
 	'db' => array(
