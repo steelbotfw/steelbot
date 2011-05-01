@@ -1,18 +1,29 @@
 <?php 
 class Timer extends SComponent {
 	protected $_time,
-		  $_callbacks = array();
+		      $_callback,
+		      $_parameters = array();
 
-	public function __construct($time) {
+	public function __construct($time, $callback, $parameters = array()) {
 		$this->_time = $time;
+		$this->_callback = $callback;
+		$this->_parameters = $parameters;
 	}
 
-	public function attachHandler($callback) {
-		$hash = $this->hashObject($callback);
-		return $hash;	
+	public function timeEvent($time) {
+		if ($time >= $this->_time) {
+			call_user_func_array($this->_callback, $this->_parameters);
+			return true;
+		}
+		return false;
 	}
 
-	protected function hashObject($obj) {
-
+	public function setCallback($callback) {
+		$this->_callback = $callback;
 	}
+
+	public function setParameters($parameters) {
+		$this->_parameters = $parameters;
+	}
+
 }
