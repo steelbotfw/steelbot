@@ -2,11 +2,12 @@
 class Timer extends SComponent {
 	protected $_time,
 		      $_callback,
+		      $_callbackHash,
 		      $_parameters = array();
 
 	public function __construct($time, $callback, $parameters = array()) {
 		$this->_time = $time;
-		$this->_callback = $callback;
+		$this->setCallback($callback);
 		$this->_parameters = $parameters;
 	}
 
@@ -20,10 +21,33 @@ class Timer extends SComponent {
 
 	public function setCallback($callback) {
 		$this->_callback = $callback;
+		$this->_callbackHash = self::hashCallback($callback);
+	}
+
+	public function hasCallback($hash) {
+		return $this->_callbackHash == $hash;
 	}
 
 	public function setParameters($parameters) {
 		$this->_parameters = $parameters;
+	}
+
+	/**
+	 * Get hash of the callback function as string
+	 *
+	 * @param mixed $callback
+	 * @return string
+	 */
+    public static function hashCallback($callback) {
+		if (is_string($callback)) {
+			return $callback;
+		} elseif (is_array($callback)) {
+			if (is_object($callback[0])) {
+				return spl_object_hash($callback[0]).$callback[1];
+			} else {
+				return $callback[0].$callback[1];
+			}
+		}
 	}
 
 }

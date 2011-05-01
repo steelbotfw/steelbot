@@ -35,8 +35,18 @@ class TimerManager extends SComponent {
 	/**
 	 * Get timer by id
 	 */
-    public function get($id) {
+	public function getById($id) {
 		return $this->_timers[$id];
+	}
+
+	public function findByCallback($hash) {
+		$result = array();
+		foreach ($this->_timers as $id=>$timer) {
+			if ($timer->hasCallback($hash)) {
+				$result[$id] = $timer;
+			}
+		}
+		return $result;
 	}
 
 	public function checkTimers() {
@@ -63,5 +73,7 @@ class TimerManager extends SComponent {
 			return false;
 		}
     }
+
+	
 
 }

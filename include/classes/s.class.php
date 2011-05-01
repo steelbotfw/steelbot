@@ -45,6 +45,17 @@ class S {
 		return self::$_logger;
 	}
 
+	public static function func2str($func) {
+		if (is_array($func)) {
+			if (is_object($func[0])) {
+				return get_class($func[0]).'->'.$func[1];
+			} else {
+				return $func[0].'::'.$func[1];
+			}
+		} else {
+			return $func;
+		}
+	}
 
 
 }
