@@ -63,16 +63,44 @@ class TimerManager extends SComponent {
      * 
      * @param int $id
      * @return bool
+     * @deprecated
      */
     public function TimerDeleteById($id) {
-        if (array_key_exists($id, $this->_timers)) {
+		trigger_error("Function ".__FUNCTION__." is deprecated", E_USER_WARNING);
+        return $this->deleteById($id);
+    }
+
+	/**
+	 * Delete timer by id
+	 *
+	 * @param int $id
+     * @return bool
+	 */
+    public function deleteById($id) {
+		if (array_key_exists($id, $this->_timers)) {
 			unset( $this->_timers[$id] );
 			S::logger()->log("Timer #{$this->_maxtimerId} deleted", __CLASS__, BaseLog::LEVEL_DEBUG);
 			return true;
 		} else {
 			return false;
 		}
-    }
+	}
+
+	/**
+	 * Delete timer by callback hash
+	 *
+	 * @param string $hash
+	 * @return int - deleted timers count
+	 */
+	public function deleteByCallback($hash) {
+		$deleted = 0;
+		foreach ($this->findByCallback($hash) as $id=>$timer) {
+			if ($this->deleteById($id)) {
+				$deleted++;
+			}
+		}
+		return $deleted;
+	}
 
 	
 
