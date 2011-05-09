@@ -98,7 +98,7 @@ while ($connect_attempts++ < S::bot()->config['bot']['connect_attempts']) {
                      S::bot()->eventManager->EventRun($event);
                   } catch (BotException $e) {
                      $exception = print_r($e,true);
-                     $fname = dirname(__FILE__).'/tmp/'.time().'.txt';
+                     $fname = APP_DIR.'/tmp/'.time().'.txt';
                      file_put_contents($fname, $exception);
                      S::logger()->log("BotExcetion catched and saved to $fname");
                   }
