@@ -23,11 +23,6 @@ use Symfony\Component\HttpKernel\Kernel;
  */
 class Application extends Kernel
 {
-    const ENV_DEV = 'dev';
-    const ENV_TEST = 'test';
-    const ENV_STAGING = 'staging';
-    const ENV_PROD = 'prod';
-
     /**
      * @var bool
      */
