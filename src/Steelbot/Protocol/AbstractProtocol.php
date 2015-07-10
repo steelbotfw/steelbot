@@ -3,6 +3,7 @@
 namespace Steelbot\Protocol;
 use Evenement\EventEmitterInterface;
 use React\EventLoop\LoopInterface;
+use Steelbot\ClientInterface;
 
 /**
  * Interface ProtocolInterface
@@ -39,4 +40,13 @@ abstract class AbstractProtocol
      * @return boolean
      */
     abstract public function isConnected();
+
+    /**
+     * @param \Steelbot\ClientInterface $client
+     * @param $text
+     *
+     * @return mixed
+     */
+    abstract public function send(ClientInterface $client, $text);
+
 }
