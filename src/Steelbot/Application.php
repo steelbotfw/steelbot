@@ -5,6 +5,10 @@ namespace Steelbot;
 use Evenement\EventEmitter;
 use React\EventLoop\Factory;
 
+/**
+ * Class Application
+ * @package Steelbot
+ */
 class Application 
 {
     /**
@@ -18,7 +22,7 @@ class Application
     protected $loop;
 
     /**
-     * @var \Steelbot\Protocol\Telnet\Protocol
+     * @var \Steelbot\Protocol\AbstractProtocol
      */
     protected $protocol;
 
@@ -27,6 +31,9 @@ class Application
      */
     protected $eventEmitter;
 
+    /**
+     * @param array $config
+     */
     public function __construct($config)
     {
         $this->modules = new \SplObjectStorage();
@@ -37,15 +44,15 @@ class Application
             echo '.';
         });
 
-        echo "Loading protocol ... ";
-        $protocolClass = $config['protocol'];
-        $this->protocol = new $protocolClass($this->loop, $this->eventEmitter);
-        echo "OK\n";
+        echo "Loading protocol ... \n";
+        $this->protocol = $this->instantiateProtocol($config['protocol']);
 
-        foreach ($config['modules'] as $classname) {
-            echo "Loading module $classname ... ";
-            $this->modules->attach(new $classname($this));
-            echo "OK\n";
+        if (isset($config['modules'])) {
+            foreach ($config['modules'] as $module) {
+                echo "Loading module $module ... ";
+                $this->modules->attach($this->instantiateModule($module));
+                echo "OK\n";
+            }
         }
     }
 
@@ -76,7 +83,7 @@ class Application
 
     /**
      * @param \Steelbot\ClientInterface $client
-     * @param $text
+     * @param string $text
      */
     public function send(ClientInterface $client, $text)
     {
@@ -84,7 +91,7 @@ class Application
     }
 
     /**
-     *
+     * Start steelbot
      */
     public function run()
     {
@@ -92,5 +99,49 @@ class Application
         $this->protocol->connect();
 
         $this->loop->run();
+    }
+
+    /**
+     * Stop steelbot
+     */
+    public function stop()
+    {
+        $this->loop->stop();
+    }
+
+    /**
+     * @param string $protocol
+     *
+     * @return \Steelbot\Protocol\AbstractProtocol
+     */
+    protected function instantiateProtocol($protocol)
+    {
+        if (!class_exists($protocol)) {
+            $protocol = 'Steelbot\\Protocol\\' . ucfirst($protocol) . '\\Protocol';
+        }
+
+        if (!class_exists($protocol)) {
+            throw new \InvalidArgumentException("Unknown protocol class: $protocol");
+        }
+
+        return new $protocol($this->loop, $this->eventEmitter);
+    }
+
+    /**
+     * @param string $module
+     *
+     * @return mixed
+     */
+    protected function instantiateModule($module)
+    {
+        if (!class_exists($module)) {
+            $module = 'Steelbot\\Module\\' . ucfirst($module) . '\\Module';
+        }
+
+        if (!class_exists($module)) {
+            throw new \InvalidArgumentException("Unknown module class: $module");
+        }
+
+        return new $module($this);
     }
 } 

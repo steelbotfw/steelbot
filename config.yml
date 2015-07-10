@@ -1,0 +1,4 @@
+---
+protocol: shell
+modules:
+  - ping
