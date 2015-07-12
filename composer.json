@@ -2,7 +2,17 @@
     "name": "steelbotfw/steelbot",
     "description": "SteelBot extendable chat/devops bot",
     "keywords": ["bot", "chatbot"],
-    "license": "MIT",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Pavel Chebotarev",
+            "email": "chebotarevp@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/steelbotfw/steelbot/issues",
+        "source": "https://github.com/steelbotfw/steelbot"
+    },
     "type": "project",
     "minimum-stability": "stable",
     "require": {
