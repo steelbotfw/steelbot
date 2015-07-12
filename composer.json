@@ -14,7 +14,7 @@
         "source": "https://github.com/steelbotfw/steelbot"
     },
     "type": "project",
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "require": {
         "php": "~7.0",
         "react/event-loop": "~0.4",
@@ -22,9 +22,13 @@
         "evenement/evenement": "~2.0",
         "symfony/yaml": "~2.7"
     },
+    "require-dev": {
+        "phpunit/phpunit": "dev-master"
+    },
     "autoload": {
         "psr-4": {
-            "Steelbot\\": "src/Steelbot/"
+            "Steelbot\\": "src/Steelbot/",
+            "Steelbot\\Tests\\": "tests"
         }
     }
 }
