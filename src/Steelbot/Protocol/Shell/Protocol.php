@@ -18,6 +18,9 @@ class Protocol extends AbstractProtocol
      */
     protected $stdin;
 
+    /**
+     * @var Client
+     */
     protected $client;
 
     /**
@@ -34,7 +37,7 @@ class Protocol extends AbstractProtocol
         $this->stdin->on('data', $this->onData());
 
         $this->prompt();
-        $this->eventEmitter->emit('protocol.postConnect');
+        $this->eventEmitter->emit(self::EVENT_POST_CONNECT);
         return true;
     }
 
@@ -43,10 +46,10 @@ class Protocol extends AbstractProtocol
      */
     public function disconnect()
     {
-        $this->eventEmitter->emit('protocol.preDisconnect');
+        $this->eventEmitter->emit(self::EVENT_PRE_DISCONNECT);
         unset($this->client);
         $this->stdin->pause();
-        $this->eventEmitter->emit('protocol.postDisconnect');
+        $this->eventEmitter->emit(self::EVENT_POST_DISCONNECT);
 
         return true;
     }
@@ -89,7 +92,7 @@ class Protocol extends AbstractProtocol
             }
 
             $message = new Message($this->client, $data, new \DateTimeImmutable());
-            $this->eventEmitter->emit('message', [$message]);
+            $this->eventEmitter->emit(self::EVENT_MESSAGE_RECEIVED, [$message]);
             $this->prompt();
         };
     }

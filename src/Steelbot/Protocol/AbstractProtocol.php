@@ -11,6 +11,14 @@ use Steelbot\ClientInterface;
  */
 abstract class AbstractProtocol
 {
+    const EVENT_PRE_CONNECT        = 'protocol.preConnect';
+    const EVENT_POST_CONNECT       = 'protocol.postConnect';
+    const EVENT_PRE_DISCONNECT     = 'protocol.preDisconnect';
+    const EVENT_POST_DISCONNECT    = 'protocol.postDisconnect';
+    const EVENT_MESSAGE_RECEIVED   = 'protocol.message.received';
+    const EVENT_MESSAGE_PRE_SEND   = 'protocol.message.preSend';
+    const EVENT_MESSAGE_POST_SEND  = 'protocol.message.postSend';
+
     /**
      * @var LoopInterface
      */
