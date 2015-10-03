@@ -1,41 +1,64 @@
 <?php
 
 namespace Steelbot\Protocol;
-use Evenement\EventEmitterInterface;
-use React\EventLoop\LoopInterface;
+
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
 use Steelbot\ClientInterface;
+use Steelbot\Ptorocol\OutgoingPayloadInterface;
+use Steelbot\EventEmitter;
 
 /**
  * Interface ProtocolInterface
  * @package Steelbot\Protocol
  */
-abstract class AbstractProtocol
+abstract class AbstractProtocol implements LoggerAwareInterface
 {
     const EVENT_PRE_CONNECT        = 'protocol.preConnect';
     const EVENT_POST_CONNECT       = 'protocol.postConnect';
     const EVENT_PRE_DISCONNECT     = 'protocol.preDisconnect';
     const EVENT_POST_DISCONNECT    = 'protocol.postDisconnect';
-    const EVENT_MESSAGE_RECEIVED   = 'protocol.message.received';
+    const EVENT_PAYLOAD_RECEIVED   = 'protocol.payload.received';
     const EVENT_MESSAGE_PRE_SEND   = 'protocol.message.preSend';
     const EVENT_MESSAGE_POST_SEND  = 'protocol.message.postSend';
 
     /**
-     * @var LoopInterface
+     * @var \Steelbot\EventEmitter
      */
-    protected $loop;
-
     protected $eventEmitter;
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     /**
      * @param $loop
      */
-    public function __construct(LoopInterface $loop, EventEmitterInterface $eventEmitter) {
-        $this->loop = $loop;
+    public function __construct(EventEmitter $eventEmitter) {
         $this->eventEmitter = $eventEmitter;
+
+        $this->eventEmitter
+            ->addEvent(self::EVENT_PRE_CONNECT)
+            ->addEvent(self::EVENT_POST_CONNECT)
+            ->addEvent(self::EVENT_PRE_DISCONNECT)
+            ->addEvent(self::EVENT_POST_DISCONNECT)
+            ->addEvent(self::EVENT_PAYLOAD_RECEIVED)
+            ->addEvent(self::EVENT_MESSAGE_PRE_SEND);
+            // EVENT_MESSAGE_POST_SEND
     }
 
     /**
-     * @return boolean
+     * @param \Psr\Log\LoggerInterface $logger
+     * @return null
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * @return bool
      */
     abstract public function connect();
 
@@ -47,14 +70,13 @@ abstract class AbstractProtocol
     /**
      * @return boolean
      */
-    abstract public function isConnected();
+    abstract public function isConnected(): bool;
 
     /**
      * @param \Steelbot\ClientInterface $client
-     * @param $text
+     * @param mixed $payload
      *
      * @return mixed
      */
-    abstract public function send(ClientInterface $client, $text);
-
+    abstract public function send(ClientInterface $client, $payload);
 }

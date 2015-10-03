@@ -16,19 +16,21 @@
     "type": "project",
     "minimum-stability": "dev",
     "require": {
-        "php": "~7.0",
-        "react/event-loop": "~0.4",
-        "react/stream": "~0.4",
-        "evenement/evenement": "~2.0",
-        "symfony/yaml": "~2.7"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "dev-master"
+        "php": ">=7",
+
+        "icicleio/icicle": "*",
+        "icicleio/http": "*",
+        "icicleio/event-emitter": "*",
+
+        "symfony/dependency-injection": "dev-master",
+        "symfony/config": "dev-master",
+        "symfony/yaml": "dev-master",
+
+        "monolog/monolog": "~1.16.0"
     },
     "autoload": {
         "psr-4": {
-            "Steelbot\\": "src/Steelbot/",
-            "Steelbot\\Tests\\": "tests"
+            "Steelbot\\": "src/Steelbot/"
         }
     }
 }

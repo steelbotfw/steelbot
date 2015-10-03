@@ -2,92 +2,126 @@
 
 namespace Steelbot;
 
-use Evenement\EventEmitter;
-use React\EventLoop\Factory;
+use Psr\Log\LoggerInterface;
+use Monolog;
+use Icicle\Coroutine;
+use Icicle\Loop;
+use Steelbot\Protocol\IncomingPayloadInterface;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 /**
  * Class Application
+ *
  * @package Steelbot
  */
-class Application 
+class Application
 {
+    const ENV_DEV = 'dev';
+    const ENV_STAGING = 'staging';
+    const ENV_PROD = 'prod';
+
     /**
      * @var \SplObjectStorage
      */
     protected $modules;
 
     /**
-     * @var \React\EventLoop\LoopInterface
+     * @var string
      */
-    protected $loop;
+    protected $env;
 
     /**
-     * @var \Steelbot\Protocol\AbstractProtocol
+     * @var ContainerBuilder
      */
-    protected $protocol;
+    protected $container;
 
     /**
-     * @var \Evenement\EventEmitterInterface
+     * @param string $env
      */
-    protected $eventEmitter;
-
-    /**
-     * @param array $config
-     */
-    public function __construct($config)
+    public function __construct()
     {
+        echo "Steelbot 4.0-dev\n\n";
+
+        $this->setEnv(STEELBOT_ENV);
+
+        $this->container = new ContainerBuilder();
+        $this->container->set('event_emitter', new EventEmitter());
+
         $this->modules = new \SplObjectStorage();
-        $this->eventEmitter = new EventEmitter();
 
-        $this->loop = Factory::create();
-        $this->loop->addPeriodicTimer(60, function () {
-            echo '.';
-        });
+        $logger = new Monolog\Logger('logger');
+        $logger->setHandlers([
+            'main' => new Monolog\Handler\ErrorLogHandler()
+        ]);
+        $this->container->set('logger', $logger);
 
-        echo "Loading protocol ... \n";
-        $this->protocol = $this->instantiateProtocol($config['protocol']);
+        $contextRouter = new \Steelbot\ContextRouter($this);
+        $contextRouter->setLogger($this->container->get('logger'));
+        $this->container->set('context_router', $contextRouter);
 
-        if (isset($config['modules'])) {
-            foreach ($config['modules'] as $module) {
-                echo "Loading module $module ... ";
-                $this->modules->attach($this->instantiateModule($module));
-                echo "OK\n";
+        $ymlLoader = new YamlFileLoader($this->container, new FileLocator(APP_DIR));
+        $ymlLoader->load('config.yml');
+    }
+
+    /**
+     * @return bool
+     */
+    public function registerPayloadHandler(): bool
+    {
+        $coroutine = Coroutine\wrap(function ($payload) {
+            $this->getLogger()->info("Received payload.", [
+                'from' => $payload->getFrom()->getId(),
+                'content' => (string)$payload
+            ]);
+
+            try {
+                yield $this->container->get('context_router')->handle($payload);
+            } catch (\Steelbot\Exception\ContextNotFoundException $e) {
+                $this->getLogger()->debug("Handle not found");
+
+                if (!$payload->isGroupChatMessage()) {
+                    yield $this->getProtocol()->send($payload->getFrom(), "Command not found");
+                }
             }
-        }
+        }, []);
+
+        $this->getEventEmitter()->on(\Steelbot\Protocol\AbstractProtocol::EVENT_PAYLOAD_RECEIVED, $coroutine);
+
+        return true;
     }
 
     /**
-     * @return \React\EventLoop\LoopInterface
+     * @return \Psr\Log\LoggerInterface
      */
-    public function getLoop()
+    public function getLogger(): LoggerInterface
     {
-        return $this->loop;
+        return $this->container->get('logger');
     }
 
     /**
-     * @return \Evenement\EventEmitterInterface
+     * @return EventEmitter
      */
-    public function getEventEmitter()
+    public function getEventEmitter(): EventEmitter
     {
-        return $this->eventEmitter;
+        return $this->container->get('event_emitter');
     }
 
     /**
-     * @param string $event
-     * @param callable $listener
+     * @return \Steelbot\Protocol\AbstractProtocol
      */
-    public function on($event, $listener)
+    public function getProtocol(): \Steelbot\Protocol\AbstractProtocol
     {
-        $this->eventEmitter->on($event, $listener);
+        return $this->container->get('protocol');
     }
 
     /**
-     * @param \Steelbot\ClientInterface $client
-     * @param string $text
+     * @return \Steelbot\ContextRouter
      */
-    public function send(ClientInterface $client, $text)
+    public function getContextRouter(): \Steelbot\ContextRouter
     {
-        $this->protocol->send($client, $text);
+        return $this->container->get('context_router');
     }
 
     /**
@@ -95,10 +129,19 @@ class Application
      */
     public function run()
     {
-        echo "Steelbot 4.0-dev\n\n";
-        $this->protocol->connect();
+        $coroutine = Coroutine\create(function() {
+            yield $this->getProtocol()->connect();
+        });
+        $coroutine->done(null, function (\Exception $e) {
+            printf("Exception: %s\n", $e);
+        });
 
-        $this->loop->run();
+        // initialize protocol events
+        $this->getProtocol();
+        
+        $this->registerPayloadHandler();
+
+        Loop\run();
     }
 
     /**
@@ -106,42 +149,39 @@ class Application
      */
     public function stop()
     {
-        $this->loop->stop();
+        if (Loop\isRunning()) {
+            Loop\stop();
+        }
     }
 
     /**
-     * @param string $protocol
+     * @param string $env
      *
-     * @return \Steelbot\Protocol\AbstractProtocol
+     * @return bool
      */
-    protected function instantiateProtocol($protocol)
+    public function setEnv(string $env): bool
     {
-        if (!class_exists($protocol)) {
-            $protocol = 'Steelbot\\Protocol\\' . ucfirst($protocol) . '\\Protocol';
-        }
+        $this->env = $env;
 
-        if (!class_exists($protocol)) {
-            throw new \InvalidArgumentException("Unknown protocol class: $protocol");
-        }
-
-        return new $protocol($this->loop, $this->eventEmitter);
+        return true;
     }
 
     /**
-     * @param string $module
-     *
-     * @return mixed
+     * @return string
      */
-    protected function instantiateModule($module)
+    public function getEnv(): string
     {
-        if (!class_exists($module)) {
-            $module = 'Steelbot\\Module\\' . ucfirst($module) . '\\Module';
-        }
-
-        if (!class_exists($module)) {
-            throw new \InvalidArgumentException("Unknown module class: $module");
-        }
-
-        return new $module($this);
+        return $this->env;
     }
-} 
+
+    /**
+     * @param string $moduleClass
+     */
+    public function addModule(string $moduleClass): bool
+    {
+        $module = new $moduleClass($this);
+        $this->modules->attach($module);
+
+        return true;
+    }
+}

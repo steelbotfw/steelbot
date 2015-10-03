@@ -27,7 +27,7 @@ class Message
      * @param string $text
      * @param \DateTimeInterface $timestamp
      */
-    public function __construct(ClientInterface $client, $text, \DateTimeInterface $timestamp)
+    public function __construct(ClientInterface $client, string $text, \DateTimeInterface $timestamp)
     {
         $this->client = $client;
         $this->text = $text;

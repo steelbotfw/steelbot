@@ -1,4 +1,10 @@
----
-protocol: shell
-modules:
-  - ping
+parameters:
+  protocol.token: 123456789:YourTokenHere
+
+services:
+  protocol:
+    class: Steelbot\Protocol\Telegram\Protocol
+    arguments: ['@event_emitter']
+    calls:
+      - [setToken, ['%protocol.token%']]
+      - [setLogger, ['@logger']]

@@ -2,10 +2,11 @@
 
 namespace Steelbot\Protocol\Shell;
 
-use React\Stream\Stream;
+use Icicle\Socket\Stream;
 use Steelbot\ClientInterface;
 use Steelbot\Message;
 use Steelbot\Protocol\AbstractProtocol;
+use Steelbot\Protocol\Shell\Message\TextMessage;
 
 /**
  * Class Protocol
@@ -29,15 +30,19 @@ class Protocol extends AbstractProtocol
     public function connect()
     {
         $this->client = new Client();
-        if ($this->stdin instanceof Stream) {
-            $this->stdin->resume();
-        } else {
-            $this->stdin = new Stream(STDIN, $this->loop);
-        }
-        $this->stdin->on('data', $this->onData());
 
-        $this->prompt();
+        if (!$this->stdin instanceof Stream\ReadableStream) {
+            $this->stdin = new Stream\ReadableStream(STDIN);
+        }
+
         $this->eventEmitter->emit(self::EVENT_POST_CONNECT);
+
+        while ($this->isConnected()) {
+            $this->prompt();
+            $data = yield $this->stdin->read(0, "\n");
+            $this->onData($data);
+        }
+
         return true;
     }
 
@@ -48,7 +53,6 @@ class Protocol extends AbstractProtocol
     {
         $this->eventEmitter->emit(self::EVENT_PRE_DISCONNECT);
         unset($this->client);
-        $this->stdin->pause();
         $this->eventEmitter->emit(self::EVENT_POST_DISCONNECT);
 
         return true;
@@ -76,25 +80,26 @@ class Protocol extends AbstractProtocol
     /**
      * @return callable
      */
-    protected function onData()
+    protected function onData($data)
     {
-        return function ($data) {
-            $data = trim($data);
+        $data = trim($data);
 
-            switch ($data) {
-                case '/exit':
-                    $this->disconnect();
-                    return;
-                case '/reconnect':
-                    $this->disconnect();
-                    $this->connect();
-                    return;
-            }
+        if (!$data) {
+            return;
+        }
 
-            $message = new Message($this->client, $data, new \DateTimeImmutable());
-            $this->eventEmitter->emit(self::EVENT_MESSAGE_RECEIVED, [$message]);
-            $this->prompt();
-        };
+        switch ($data) {
+            case '/exit':
+                $this->disconnect();
+                return;
+            case '/reconnect':
+                $this->disconnect();
+                $this->connect();
+                return;
+        }
+
+        $message = new TextMessage($data, $this->client);
+        $this->eventEmitter->emit(self::EVENT_PAYLOAD_RECEIVED, [$message]);
     }
 
     /**

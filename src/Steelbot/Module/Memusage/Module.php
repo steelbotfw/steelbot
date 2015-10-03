@@ -1,6 +1,8 @@
 <?php
 
 namespace Steelbot\Module\Memusage;
+
+use Icicle\Loop;
 use Steelbot\Application;
 use Steelbot\Module\AbstractModule;
 
@@ -18,7 +20,7 @@ class Module extends AbstractModule
     public function __construct(Application $app)
     {
         parent::__construct($app);
-        $app->getLoop()->addPeriodicTimer(self::PERIOD, [$this, 'onTimer']);
+        Loop\periodic(self::PERIOD, [$this, 'onTimer']);
     }
 
     public function getId()
