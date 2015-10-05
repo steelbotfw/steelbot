@@ -3,9 +3,10 @@
 namespace Steelbot\Protocol\Telegram\Message;
 
 use Steelbot\ClientInterface;
+use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\TextMessageInterface;
 
-class TextMessage extends AbstractMessage implements TextMessageInterface
+class TextMessage extends AbstractMessage implements TextMessageInterface, IncomingPayloadInterface
 {
     /**
      * @var string
@@ -33,5 +34,10 @@ class TextMessage extends AbstractMessage implements TextMessageInterface
     public function __toString() : string
     {
         return $this->text;
+    }
+
+    public function getType(): string
+    {
+        return self::TYPE_TEXT;
     }
 }

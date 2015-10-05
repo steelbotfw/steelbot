@@ -2,6 +2,8 @@
 
 namespace Steelbot\Context;
 
+use Steelbot\Protocol\IncomingPayloadInterface;
+
 interface RouteMatcherInterface
 {
     /**
@@ -9,5 +11,15 @@ interface RouteMatcherInterface
      *
      * @return bool
      */
-    public function match($payload) : bool;
+    public function match(IncomingPayloadInterface $payload): bool;
+
+    /**
+     * @return int
+     */
+    public function getPriority(): int;
+
+    /**
+     * @return array
+     */
+    public function getHelp(): array;
 }
