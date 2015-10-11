@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: nexor
- * Date: 04.10.15
- * Time: 2:29
- */
 
 namespace Steelbot\Protocol\Telegram;
 
