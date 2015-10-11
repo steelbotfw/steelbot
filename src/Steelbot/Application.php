@@ -6,6 +6,7 @@ use Psr\Log\LoggerInterface;
 use Monolog;
 use Icicle\Coroutine;
 use Icicle\Loop;
+use Steelbot\Exception\ContextNotFoundException;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -70,15 +71,15 @@ class Application
      */
     public function registerPayloadHandler(): bool
     {
-        $coroutine = Coroutine\wrap(function ($payload) {
+        $wrap = Coroutine\wrap(function ($payload) {
             $this->getLogger()->info("Received payload.", [
                 'from' => $payload->getFrom()->getId(),
                 'content' => (string)$payload
             ]);
 
             try {
-                yield $this->container->get('context_router')->handle($payload);
-            } catch (\Steelbot\Exception\ContextNotFoundException $e) {
+                yield $this->getContextRouter()->handle($payload);
+            } catch (ContextNotFoundException $e) {
                 $this->getLogger()->debug("Handle not found");
 
                 if (!$payload->isGroupChatMessage()) {
@@ -87,7 +88,7 @@ class Application
             }
         }, []);
 
-        $this->getEventEmitter()->on(\Steelbot\Protocol\AbstractProtocol::EVENT_PAYLOAD_RECEIVED, $coroutine);
+        $this->getEventEmitter()->on(\Steelbot\Protocol\AbstractProtocol::EVENT_PAYLOAD_RECEIVED, $wrap);
 
         return true;
     }
