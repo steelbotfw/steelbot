@@ -182,6 +182,7 @@ class Application
     {
         $module = new $moduleClass($this);
         $this->modules->attach($module);
+        $module->init();
 
         return true;
     }

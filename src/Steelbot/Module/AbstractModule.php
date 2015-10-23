@@ -1,6 +1,7 @@
 <?php
 
 namespace Steelbot\Module;
+
 use Steelbot\Application;
 
 /**
@@ -20,6 +21,11 @@ abstract class AbstractModule
     public function __construct(Application $app)
     {
         $this->app = $app;
+    }
+
+    public function init()
+    {
+
     }
 
     /**
