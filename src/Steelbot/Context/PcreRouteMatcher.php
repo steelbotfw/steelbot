@@ -10,29 +10,12 @@ use Steelbot\Protocol\TextMessageInterface;
  *
  * @package Steelbot\Context
  */
-class PcreRouteMatcher implements RouteMatcherInterface
+class PcreRouteMatcher extends AbstractRouteMatcher
 {
     /**
      * @var string
      */
     protected $regexp;
-
-    /**
-     * @var bool|true
-     */
-    protected $enablePrivateChat = true;
-
-    /**
-     * @var bool|true
-     */
-    protected $enableGroupChat = false;
-
-    /**
-     * @var int
-     */
-    protected $priority = 0;
-
-    protected $help = [];
 
     /**
      * @param \Steelbot\Context\string $regexp
@@ -46,45 +29,6 @@ class PcreRouteMatcher implements RouteMatcherInterface
     }
 
     /**
-     * @param bool $enabled
-     */
-    public function setPrivateChat(bool $enabled)
-    {
-        $this->enablePrivateChat = $enabled;
-    }
-
-    /**
-     * @param bool $enabled
-     */
-    public function setGroupChat(bool $enabled)
-    {
-        $this->enableGroupChat = $enabled;
-    }
-
-    /**
-     * Matcher priority
-     *
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return $this->priority;
-    }
-
-    /**
-     * @param array $help
-     */
-    public function setHelp(array $help = [])
-    {
-        $this->help = $help;
-    }
-
-    public function getHelp(): array
-    {
-        return $this->help;
-    }
-
-    /**
      * @param \Steelbot\Protocol\IncomingPayloadInterface $payload
      *
      * @return bool
@@ -93,8 +37,8 @@ class PcreRouteMatcher implements RouteMatcherInterface
     {
         return ($payload instanceof TextMessageInterface) &&
         (
-            ($this->enablePrivateChat && $payload->getFrom()->getId() === $payload->getUser()->getId()) ||
-            ($this->enableGroupChat && $payload->getFrom()->getId() !== $payload->getUser()->getId())
+            ($this->enablePrivateChat && !$payload->isGroupChatMessage()) ||
+            ($this->enableGroupChat && $payload->isGroupChatMessage())
         ) &&
         (preg_match($this->regexp, (string)$payload));
     }

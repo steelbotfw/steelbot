@@ -5,6 +5,7 @@ namespace Steelbot\Protocol\Telegram;
 
 use Steelbot\Context\Context;
 use Steelbot\Context\RouteMatcherInterface;
+use Steelbot\Protocol\IncomingPayloadInterface;
 
 /**
  * Class HelpContext
@@ -22,8 +23,10 @@ class HelpContext extends Context
                 /** @var RouteMatcherInterface $routeMatcher */
                 $routeMatcher = $pair[0];
 
-                foreach ($routeMatcher->getHelp() as $command => $description) {
-                    $help[] = "$command - $description";
+                if (!$message->isGroupChatMessage() || $routeMatcher->getGroupChat()) {
+                    foreach ($routeMatcher->getHelp() as $command => $description) {
+                        $help[] = "$command - $description";
+                    }
                 }
             }
         }
