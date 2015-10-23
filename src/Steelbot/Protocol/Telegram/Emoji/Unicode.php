@@ -15,4 +15,6 @@ class Unicode
 
 
     const HEAVY_CHECK_MARK = "\u{2714}";
+
+    const QUESTION = "\u{2753}";
 }

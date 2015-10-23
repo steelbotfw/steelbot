@@ -12,7 +12,7 @@ use Steelbot\Context\RouteMatcherInterface;
  */
 class HelpContext extends Context
 {
-    public function handle($message)
+    public function handle($message): \Generator
     {
         $this->resolve();
         $help = ["Commands:"];

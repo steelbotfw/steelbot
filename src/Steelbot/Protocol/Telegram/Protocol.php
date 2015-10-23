@@ -95,7 +95,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
     public function send(ClientInterface $client, $payload, $replyMarkup = null)
     {
         if (is_string($payload)) {
-            return $this->api->sendMessage($client->getId(), $payload, false, null, $replyMarkup);
+            return $this->api->sendMessage($client->getId(), $payload, 'Markdown', false, null, $replyMarkup);
         }
 
         throw new \DomainException("Unknown payload type");

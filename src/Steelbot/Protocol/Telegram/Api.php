@@ -98,6 +98,7 @@ class Api
      */
     public function sendMessage(int    $chatId,
                                 string $text,
+                                string $parseMode,
                                 bool   $disableWebPagePreview = false,
                                 int    $replyToMessageId = null,
                                 string $replyMarkup = null): \Generator
@@ -106,6 +107,10 @@ class Api
             'chat_id' => $chatId,
             'text' => $text
         ];
+
+        if ($parseMode) {
+            $params['parse_mode'] = $parseMode;
+        }
 
         if ($disableWebPagePreview) {
             $params['disable_web_page_preview'] = true;

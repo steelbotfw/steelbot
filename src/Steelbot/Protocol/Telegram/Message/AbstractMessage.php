@@ -31,12 +31,18 @@ abstract class AbstractMessage
         $this->user = $user;
     }
 
-    public function getFrom() : ClientInterface
+    /**
+     * @return \Steelbot\ClientInterface
+     */
+    public function getFrom(): ClientInterface
     {
         return $this->from;
     }
 
-    public function getUser() : ClientInterface
+    /**
+     * @return \Steelbot\ClientInterface
+     */
+    public function getUser(): ClientInterface
     {
         return $this->user;
     }
@@ -49,5 +55,5 @@ abstract class AbstractMessage
         return $this->from->getId() !== $this->user->getId();
     }
 
-    abstract public function __toString() : string;
+    abstract public function __toString(): string;
 }

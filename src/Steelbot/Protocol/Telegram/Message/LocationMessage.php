@@ -3,6 +3,7 @@
 namespace Steelbot\Protocol\Telegram\Message;
 
 use Steelbot\ClientInterface;
+use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\LocationMessageInterface;
 
 /**
@@ -10,7 +11,7 @@ use Steelbot\Protocol\LocationMessageInterface;
  *
  * @package Steelbot\Protocol\Telegram\Message
  */
-class LocationMessage extends AbstractMessage implements LocationMessageInterface
+class LocationMessage extends AbstractMessage implements LocationMessageInterface, IncomingPayloadInterface
 {
     /**
      * @var float
@@ -53,5 +54,15 @@ class LocationMessage extends AbstractMessage implements LocationMessageInterfac
     public function __toString() : string
     {
         return "lon:{$this->longitude}, lat:{$this->latitude}";
+    }
+
+    /**
+     * Payload type.
+     *
+     * @return string
+     */
+    public function getType(): string
+    {
+        return static::TYPE_LOCATION;
     }
 }
