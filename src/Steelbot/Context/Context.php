@@ -2,10 +2,12 @@
 
 namespace Steelbot\Context;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
 use Steelbot\Application;
 use Steelbot\ClientInterface;
 
-class Context implements ContextInterface
+class Context implements ContextInterface, LoggerAwareInterface
 {
     /**
      * @var \Steelbot\Application
@@ -21,6 +23,11 @@ class Context implements ContextInterface
      * @var bool
      */
     protected $isResolved = false;
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     /**
      * @param \Steelbot\Application $app
@@ -64,8 +71,20 @@ class Context implements ContextInterface
      *
      * @return mixed
      */
-    protected function answer(string $text, ...$args)
+    protected function answer(string $text)
     {
-        return $this->app->getProtocol()->send($this->client, $text, ...$args);
+        return $this->app->getProtocol()->send($this->client, $text);
+    }
+
+    /**
+     * Sets a logger instance on the object.
+     *
+     * @param LoggerInterface $logger
+     *
+     * @return null
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
     }
 }
