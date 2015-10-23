@@ -340,7 +340,6 @@ class Api
             $uri = $url;
         }
 
-        $this->logger->debug("POST $uri");
         yield $this->httpClient->request('POST', $uri, [], null, [
             'timeout' => 60
         ]);
