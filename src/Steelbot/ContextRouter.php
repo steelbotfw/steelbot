@@ -46,7 +46,10 @@ class ContextRouter implements LoggerAwareInterface
     public function __construct(Application $app)
     {
         $this->app = $app;
-        $this->setRoute('~^/help$~i', HelpContext::class);
+
+        $helpMatcher = new PcreRouteMatcher('~^/help$~i');
+        $helpMatcher->setGroupChat(true);
+        $this->setRoute($helpMatcher, HelpContext::class);
     }
 
     /**
@@ -67,7 +70,7 @@ class ContextRouter implements LoggerAwareInterface
         $client = $payload->getFrom();
         $clientId = $client->getId();
 
-        $this->logger->debug("New payload from $clientId");
+        $this->logger->debug("New payload", ['clientId' => $clientId]);
 
         if (isset($this->clientContexts[$clientId])) {
             $context = $this->clientContexts[$clientId];
@@ -76,12 +79,15 @@ class ContextRouter implements LoggerAwareInterface
             if ($context instanceof LoggerAwareInterface) {
                 $context->setLogger($this->logger);
             }
-            $this->logger->debug("Assigning context ".get_class($context)." for $clientId");
+            $this->logger->debug("Assigning context", [
+                'class' => get_class($context),
+                'clientId' => $clientId
+            ]);
             $this->clientContexts[$clientId] = $context;
         }
 
         if (is_callable($context))  {
-            yield $context($payload, $client, $this->app);
+            yield $context($payload, $this->app, $client);
             $isResolved = true;
 
         } elseif ($context instanceof ContextInterface) {
@@ -90,7 +96,7 @@ class ContextRouter implements LoggerAwareInterface
         }
 
         if ($isResolved) {
-            $this->logger->debug("Destroying context for $clientId");
+            $this->logger->debug("Destroying context", ['clientId' => $clientId]);
             unset($context);
             unset($this->clientContexts[$clientId]);
         }
@@ -130,23 +136,26 @@ class ContextRouter implements LoggerAwareInterface
      * @return \Steelbot\Context\ContextInterface
      * @throws \Steelbot\Exception\ContextNotFoundException
      */
-    protected function findContext(IncomingPayloadInterface $payload, ClientInterface $client): ContextInterface
+    protected function findContext(IncomingPayloadInterface $payload, ClientInterface $client)
     {
         foreach ($this->routes as $priority => $pairs) {
+            $this->logger->debug("Checking route priority", ['priority' => $priority]);
+
             foreach ($pairs as $pair) {
                 list($routeMatcher, $handler) = $pair;
-                $this->logger->debug("Checking route priority $priority", []);
 
                 if ($routeMatcher->match($payload)) {
                     if (is_callable($handler)) {
-                        $this->logger->debug("Returning  callable handler");
+                        $this->logger->debug("Returning callable handler");
                         return $handler;
                     } elseif (class_exists($handler, true)) {
                         $this->logger->debug("Returning class handler");
                         return new $handler($this->app, $client);
                     } elseif (file_exists($handler)) {
-                        $this->logger->debug("Returning anonymous class handler");
-                        return $this->createAnonymousClass($this->app, $client, $handler);
+                        $this->logger->debug("Returning anonymous class or closure", [
+                            'file' => $handler
+                        ]);
+                        return $this->createContextFromFile($this->app, $client, $handler);
                     } else {
                         throw new \UnexpectedValueException("Error resolving context: $handler");
                     }
@@ -162,9 +171,9 @@ class ContextRouter implements LoggerAwareInterface
      * @param \Steelbot\ClientInterface $client
      * @param string $filename
      *
-     * @return \Steelbot\Context\ContextInterface
+     * @return \Steelbot\Context\ContextInterface|\Closure
      */
-    protected function createAnonymousClass(Application $app, ClientInterface $client, $filename): ContextInterface
+    protected function createContextFromFile(Application $app, ClientInterface $client, $filename)
     {
         return include $filename;
     }
