@@ -73,6 +73,9 @@ class ContextRouter implements LoggerAwareInterface
             $context = $this->clientContexts[$clientId];
         } else {
             $context = $this->findContext($payload, $client);
+            if ($context instanceof LoggerAwareInterface) {
+                $context->setLogger($this->logger);
+            }
             $this->logger->debug("Assigning context ".get_class($context)." for $clientId");
             $this->clientContexts[$clientId] = $context;
         }
