@@ -3,6 +3,7 @@
 namespace Steelbot;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
+use Steelbot\Context\Context;
 use Steelbot\Context\ContextInterface;
 use Steelbot\Context\IncludeFileContext;
 use Steelbot\Context\PcreRouteMatcher;
@@ -72,13 +73,7 @@ class ContextRouter implements LoggerAwareInterface
             $context = $this->clientContexts[$clientId];
         } else {
             $context = $this->findContext($payload, $client);
-
-            if ($context === null) {
-                throw new ContextNotFoundException;
-            }
-
             $this->logger->debug("Assigning context ".get_class($context)." for $clientId");
-
             $this->clientContexts[$clientId] = $context;
         }
 
@@ -126,12 +121,13 @@ class ContextRouter implements LoggerAwareInterface
     }
 
     /**
-     * @param \Steelbot\string $text
+     * @param \Steelbot\Protocol\IncomingPayloadInterface $payload
      * @param \Steelbot\ClientInterface $client
      *
-     * @return null|ContextInterface
+     * @return \Steelbot\Context\ContextInterface
+     * @throws \Steelbot\Exception\ContextNotFoundException
      */
-    protected function findContext(IncomingPayloadInterface $payload, ClientInterface $client)
+    protected function findContext(IncomingPayloadInterface $payload, ClientInterface $client): ContextInterface
     {
         foreach ($this->routes as $priority => $pairs) {
             foreach ($pairs as $pair) {
@@ -140,11 +136,14 @@ class ContextRouter implements LoggerAwareInterface
 
                 if ($routeMatcher->match($payload)) {
                     if (is_callable($handler)) {
+                        $this->logger->debug("Returning  callable handler");
                         return $handler;
                     } elseif (class_exists($handler, true)) {
+                        $this->logger->debug("Returning class handler");
                         return new $handler($this->app, $client);
                     } elseif (file_exists($handler)) {
-                        return new IncludeFileContext($this->app, $client, $handler);
+                        $this->logger->debug("Returning anonymous class handler");
+                        return $this->createAnonymousClass($this->app, $client, $handler);
                     } else {
                         throw new \UnexpectedValueException("Error resolving context: $handler");
                     }
@@ -152,6 +151,18 @@ class ContextRouter implements LoggerAwareInterface
             }
         }
 
-        return null;
+        throw new ContextNotFoundException;
+    }
+
+    /**
+     * @param \Steelbot\Application $app
+     * @param \Steelbot\ClientInterface $client
+     * @param string $filename
+     *
+     * @return \Steelbot\Context\ContextInterface
+     */
+    protected function createAnonymousClass(Application $app, ClientInterface $client, $filename): ContextInterface
+    {
+        return include $filename;
     }
 }
