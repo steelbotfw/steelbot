@@ -34,7 +34,7 @@
     "autoload": {
         "psr-4": {
             "Steelbot\\": "src/Steelbot/",
-            "Steelbot\\Tests\\": "tests"
+            "Steelbot\\Tests\\": "tests/Steelbot/"
         }
     }
 }
