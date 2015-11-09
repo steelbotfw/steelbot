@@ -392,7 +392,7 @@ class Api
      */
     protected function buildUrl(string $pathName, array $params = []): string
     {
-        $nonEmptyParams = array_filter($params, function ($value) { $value === null; });
+        $nonEmptyParams = array_filter($params, function ($value) { return $value !== null; });
         $paramStr = count($nonEmptyParams) ? '?'.http_build_query($nonEmptyParams) : null;
 
         return $this->baseUrl.$this->token.$pathName.$paramStr;

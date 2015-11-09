@@ -19,9 +19,9 @@ class User implements ClientInterface
      */
     public function __construct(array $data) {
         $this->id = $data['id'];
-        $this->firstName = $data['first_name'];
-        $this->lastName = $data['last_name'] ?? null;
-        $this->username = isset($data['username']) ? $data['username'] : null;
+        $this->firstName = $data['first_name'] ?? null;
+        $this->lastName  = $data['last_name']  ?? null;
+        $this->username  = $data['username']   ?? null;
     }
 
     /**
