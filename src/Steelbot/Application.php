@@ -43,27 +43,10 @@ class Application
      */
     public function __construct()
     {
-        echo "Steelbot 4.0-dev\n\n";
-
         $this->setEnv(STEELBOT_ENV);
 
         $this->container = new ContainerBuilder();
-        $this->container->set('event_emitter', new EventEmitter());
-
         $this->modules = new \SplObjectStorage();
-
-        $logger = new Monolog\Logger('logger');
-        $logger->setHandlers([
-            'main' => new Monolog\Handler\ErrorLogHandler()
-        ]);
-        $this->container->set('logger', $logger);
-
-        $contextRouter = new \Steelbot\ContextRouter($this);
-        $contextRouter->setLogger($this->container->get('logger'));
-        $this->container->set('context_router', $contextRouter);
-
-        $ymlLoader = new YamlFileLoader($this->container, new FileLocator(APP_DIR));
-        $ymlLoader->load('config.yml');
     }
 
     /**
@@ -71,7 +54,7 @@ class Application
      */
     public function registerPayloadHandler(): bool
     {
-        $wrap = Coroutine\wrap(function ($payload) {
+        $wrap = Coroutine\wrap(function (IncomingPayloadInterface $payload) {
             $this->getLogger()->info("Received payload.", [
                 'from' => $payload->getFrom()->getId(),
                 'content' => (string)$payload
@@ -130,6 +113,27 @@ class Application
      */
     public function run()
     {
+        echo "Steelbot 4.0-dev\n\n";
+
+        $this->container->set('event_emitter', new EventEmitter());
+
+        $logger = new Monolog\Logger('logger');
+        $logger->setHandlers([
+            'main' => new Monolog\Handler\ErrorLogHandler()
+        ]);
+        $this->container->set('logger', $logger);
+
+        $contextRouter = new \Steelbot\ContextRouter($this);
+        $contextRouter->setLogger($this->container->get('logger'));
+        $this->container->set('context_router', $contextRouter);
+
+        $ymlLoader = new YamlFileLoader($this->container, new FileLocator(APP_DIR));
+        $ymlLoader->load('config.yml');
+
+        foreach ($this->modules as $module) {
+            $module->init();
+        }
+
         $coroutine = Coroutine\create(function() {
             yield $this->getProtocol()->connect();
         });
@@ -178,12 +182,11 @@ class Application
     /**
      * @param string $moduleClass
      */
-    public function addModule(string $moduleClass): bool
+    public function addModule(string $moduleClass): self
     {
         $module = new $moduleClass($this);
         $this->modules->attach($module);
-        $module->init();
 
-        return true;
+        return $this;
     }
 }

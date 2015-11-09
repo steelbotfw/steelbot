@@ -6,6 +6,8 @@ use Icicle\Promise\Exception\TimeoutException;
 use Icicle\Coroutine;
 
 use Steelbot\ClientInterface;
+use Steelbot\Protocol\ImageMessageInterface;
+use Steelbot\Protocol\Payload\Outgoing\Image;
 
 /**
  * Class Protocol
@@ -96,6 +98,8 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
     {
         if (is_string($payload)) {
             return $this->api->sendMessage($client->getId(), $payload, 'Markdown', false, null, $replyMarkup);
+        } elseif ($payload instanceof Image) {
+            return $this->api->sendPhoto($client->getId(), $payload->getResource(), null, null, null);
         }
 
         throw new \DomainException("Unknown payload type");

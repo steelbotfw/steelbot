@@ -3,7 +3,11 @@
 namespace Steelbot\Protocol\Telegram;
 
 use Icicle\Http\Client\Client;
+use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
+use Icicle\Stream\MemoryStream;
+use Icicle\Stream\pipe;
+use Icicle\Stream\Pipe\ReadablePipe;
 use Psr\Log\LoggerInterface;
 use Steelbot\Protocol\Telegram\Entity\Update;
 use Steelbot\Protocol\Telegram\Entity;
@@ -144,11 +148,58 @@ class Api
     }
 
     /**
-     * @todo
+     * Send image to a user
+     *
+     * @var int         $chatId
+     * @var resource    $photo
+     * @var string|null $caption
+     * @var int|null    $replyToMessageId
+     * @var mixed       $replyMarkup
+     *
+     * @return \Generator
      */
-    public function sendPhoto()
+    public function sendPhoto(int    $chatId,
+                                     $photo,
+                              string $caption = null,
+                              int    $replyToMessageId = null,
+                                     $replyMarkup = null
+                                    ): \Generator
     {
+        $params = [
+            'chat_id' => $chatId,
+            'caption' => $caption,
+            'replyToMessageId' => $replyToMessageId
+        ];
 
+        $imageContentPipe = new ReadablePipe($photo);
+
+        $boundary = uniqid();
+
+        $mem = new MemoryStream();
+        $contentLength = 0;
+        $contentLength += yield $mem->write("--$boundary\r\nContent-Disposition: form-data; name=\"photo\"; filename=\"example1.jpg\"\r\n\r\n");
+        $contentLength += yield pipe($imageContentPipe, $mem, false);
+        $contentLength += yield $mem->end("\r\n--$boundary--");
+
+        $url = $this->buildUrl('/sendPhoto', $params);
+
+        $headers = [
+            'Content-type' => "multipart/form-data, boundary=$boundary",
+            'Content-Length' => $contentLength
+        ];
+
+        $request = new Request('POST', $url, $headers, $mem);
+
+        $response = yield $this->httpClient->send($request, []);
+
+        $stream = $response->getBody();
+        $data = '';
+        while ($stream->isReadable()) {
+            $data .= yield $stream->read();
+        }
+        $data = json_decode($data, true);
+
+        yield new Entity\Message($data['result']);
     }
 
     /**
@@ -304,44 +355,46 @@ class Api
      *
      * @yield Generator
      */
-    protected function get(string $url, array $params = [])
+    protected function get(string $pathName, array $params = [])
     {
-        $this->logger && $this->logger->debug("Requesting $url", $params);
+        $this->logger && $this->logger->debug("Requesting $pathName", $params);
 
-        $url = $this->baseUrl.$this->token . $url;
+        $url = $this->buildUrl($pathName, $params);
 
-        if (count($params)) {
-            $uri = $url.'?'.http_build_query($params);
-        } else {
-            $uri = $url;
-        }
-
-        $this->logger && $this->logger->debug("GET $uri");
-        yield $this->httpClient->request('GET', $uri, [], null, [
+        yield $this->httpClient->request('GET', $url, [], null, [
             'timeout' => 60
         ]);
     }
 
     /**
-     * @param string $url
+     * @param string $pathName
      * @param array $params
      *
      * @yield Generator
      */
-    protected function post(string $url, array $params = [])
+    protected function post(string $pathName, array $params = [])
     {
-        $this->logger->debug("Requesting $url", $params);
+        $this->logger && $this->logger->debug("Requesting $pathName", $params);
 
-        $url = $this->baseUrl.$this->token . $url;
+        $url = $this->buildUrl($pathName, $params);
 
-        if (count($params)) {
-            $uri = $url.'?'.http_build_query($params);
-        } else {
-            $uri = $url;
-        }
-
-        yield $this->httpClient->request('POST', $uri, [], null, [
+        yield $this->httpClient->request('POST', $url, [], null, [
             'timeout' => 60
         ]);
+    }
+
+    /**
+     * Build full URL to a telegram API with given pathName
+     *
+     * @param string $pathName
+     *
+     * @return string
+     */
+    protected function buildUrl(string $pathName, array $params = []): string
+    {
+        $nonEmptyParams = array_filter($params, function ($value) { $value === null; });
+        $paramStr = count($nonEmptyParams) ? '?'.http_build_query($nonEmptyParams) : null;
+
+        return $this->baseUrl.$this->token.$pathName.$paramStr;
     }
 }

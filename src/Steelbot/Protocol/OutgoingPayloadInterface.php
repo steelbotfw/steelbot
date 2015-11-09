@@ -1,6 +1,6 @@
 <?php
 
-namespace Steelbot\Ptorocol;
+namespace Steelbot\Protocol;
 
 interface OutgoingPayloadInterface
 {
