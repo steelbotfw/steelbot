@@ -5,8 +5,8 @@ namespace Steelbot\Protocol;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Steelbot\ClientInterface;
-use Steelbot\Ptorocol\OutgoingPayloadInterface;
-use Steelbot\EventEmitter;
+use Steelbot\Protocol\OutgoingPayloadInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * Interface ProtocolInterface
@@ -18,14 +18,13 @@ abstract class AbstractProtocol implements LoggerAwareInterface
     const EVENT_POST_CONNECT       = 'protocol.postConnect';
     const EVENT_PRE_DISCONNECT     = 'protocol.preDisconnect';
     const EVENT_POST_DISCONNECT    = 'protocol.postDisconnect';
-    const EVENT_PAYLOAD_RECEIVED   = 'protocol.payload.received';
     const EVENT_MESSAGE_PRE_SEND   = 'protocol.message.preSend';
     const EVENT_MESSAGE_POST_SEND  = 'protocol.message.postSend';
 
     /**
-     * @var \Steelbot\EventEmitter
+     * @var EventDispatcherInterface
      */
-    protected $eventEmitter;
+    protected $eventDispatcher;
 
     /**
      * @var LoggerInterface
@@ -35,17 +34,9 @@ abstract class AbstractProtocol implements LoggerAwareInterface
     /**
      * @param $loop
      */
-    public function __construct(EventEmitter $eventEmitter) {
-        $this->eventEmitter = $eventEmitter;
-
-        $this->eventEmitter
-            ->addEvent(self::EVENT_PRE_CONNECT)
-            ->addEvent(self::EVENT_POST_CONNECT)
-            ->addEvent(self::EVENT_PRE_DISCONNECT)
-            ->addEvent(self::EVENT_POST_DISCONNECT)
-            ->addEvent(self::EVENT_PAYLOAD_RECEIVED)
-            ->addEvent(self::EVENT_MESSAGE_PRE_SEND);
-            // EVENT_MESSAGE_POST_SEND
+    public function __construct(EventDispatcher $eventDispatcher)
+    {
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**

@@ -4,7 +4,7 @@ parameters:
 services:
   protocol:
     class: Steelbot\Protocol\Telegram\Protocol
-    arguments: ['@event_emitter']
+    arguments: ['@event_dispatcher']
     calls:
       - [setToken, ['%protocol.token%']]
       - [setLogger, ['@logger']]

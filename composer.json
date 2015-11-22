@@ -20,8 +20,8 @@
 
         "icicleio/icicle": "*",
         "icicleio/http": "*",
-        "icicleio/event-emitter": "*",
 
+        "symfony/http-kernel": "dev-master",
         "symfony/dependency-injection": "dev-master",
         "symfony/config": "dev-master",
         "symfony/yaml": "dev-master",

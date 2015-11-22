@@ -6,47 +6,33 @@ use Psr\Log\LoggerInterface;
 use Monolog;
 use Icicle\Coroutine;
 use Icicle\Loop;
+use Steelbot\Context\ContextProviderCompilerPass;
+use Steelbot\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
-use Steelbot\Protocol\IncomingPayloadInterface;
-use Symfony\Component\Config\FileLocator;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\Config\Loader\LoaderInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpKernel\Bundle\BundleInterface;
+use Symfony\Component\HttpKernel\Kernel;
 
 /**
  * Class Application
  *
  * @package Steelbot
  */
-class Application
+class Application extends Kernel
 {
     const ENV_DEV = 'dev';
     const ENV_STAGING = 'staging';
     const ENV_PROD = 'prod';
 
-    /**
-     * @var \SplObjectStorage
-     */
-    protected $modules;
-
-    /**
-     * @var string
-     */
-    protected $env;
-
-    /**
-     * @var ContainerBuilder
-     */
-    protected $container;
+    protected $loadClassCache = false;
 
     /**
      * @param string $env
      */
     public function __construct()
     {
-        $this->setEnv(STEELBOT_ENV);
-
-        $this->container = new ContainerBuilder();
-        $this->modules = new \SplObjectStorage();
+        parent::__construct(STEELBOT_ENV, STEELBOT_ENV == self::ENV_DEV);
     }
 
     /**
@@ -54,7 +40,9 @@ class Application
      */
     public function registerPayloadHandler(): bool
     {
-        $wrap = Coroutine\wrap(function (IncomingPayloadInterface $payload) {
+        $coroutine = Coroutine\wrap(function (IncomingPayloadEvent $event) {
+            $payload = $event->getPayload();
+
             $this->getLogger()->info("Received payload.", [
                 'from' => $payload->getFrom()->getId(),
                 'content' => (string)$payload
@@ -71,8 +59,7 @@ class Application
             }
         }, []);
 
-        $this->getEventEmitter()->on(\Steelbot\Protocol\AbstractProtocol::EVENT_PAYLOAD_RECEIVED, $wrap);
-
+        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::class, $coroutine);
         return true;
     }
 
@@ -85,11 +72,11 @@ class Application
     }
 
     /**
-     * @return EventEmitter
+     * @return \Symfony\Component\EventDispatcher\EventDispatcherInterface
      */
-    public function getEventEmitter(): EventEmitter
+    public function getEventDispatcher(): EventDispatcherInterface
     {
-        return $this->container->get('event_emitter');
+        return $this->container->get('event_dispatcher');
     }
 
     /**
@@ -115,24 +102,7 @@ class Application
     {
         echo "Steelbot 4.0-dev\n\n";
 
-        $this->container->set('event_emitter', new EventEmitter());
-
-        $logger = new Monolog\Logger('logger');
-        $logger->setHandlers([
-            'main' => new Monolog\Handler\ErrorLogHandler()
-        ]);
-        $this->container->set('logger', $logger);
-
-        $contextRouter = new \Steelbot\ContextRouter($this);
-        $contextRouter->setLogger($this->container->get('logger'));
-        $this->container->set('context_router', $contextRouter);
-
-        $ymlLoader = new YamlFileLoader($this->container, new FileLocator(APP_DIR));
-        $ymlLoader->load('config.yml');
-
-        foreach ($this->modules as $module) {
-            $module->init();
-        }
+        $this->boot();
 
         $coroutine = Coroutine\create(function() {
             yield $this->getProtocol()->connect();
@@ -141,9 +111,6 @@ class Application
             printf("Exception: %s\n", $e);
         });
 
-        // initialize protocol events
-        $this->getProtocol();
-        
         $this->registerPayloadHandler();
 
         Loop\run();
@@ -160,33 +127,40 @@ class Application
     }
 
     /**
-     * @param string $env
+     * Returns an array of bundles to register.
      *
-     * @return bool
+     * @return BundleInterface[] An array of bundle instances.
      */
-    public function setEnv(string $env): bool
+    public function registerBundles()
     {
-        $this->env = $env;
-
-        return true;
+        return [];
     }
 
     /**
-     * @return string
+     * Loads the container configuration.
+     *
+     * @param LoaderInterface $loader A LoaderInterface instance
      */
-    public function getEnv(): string
+    public function registerContainerConfiguration(LoaderInterface $loader)
     {
-        return $this->env;
+        $loader->load(__DIR__.'/config/config.yml');
+        $loader->load(APP_DIR.'/config.yml');
+    }
+
+    public function getCacheDir()
+    {
+        return APP_DIR.'/cache';
     }
 
     /**
-     * @param string $moduleClass
+     * @return \Symfony\Component\DependencyInjection\ContainerBuilder
      */
-    public function addModule(string $moduleClass): self
+    protected function buildContainer()
     {
-        $module = new $moduleClass($this);
-        $this->modules->attach($module);
+        $container = parent::buildContainer();
 
-        return $this;
+        $container->addCompilerPass(new ContextProviderCompilerPass());
+
+        return $container;
     }
 }

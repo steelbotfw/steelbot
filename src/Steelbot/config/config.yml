@@ -1,0 +1,16 @@
+---
+
+services:
+  event_dispatcher:
+    class: Symfony\Component\EventDispatcher\EventDispatcher
+
+  logger:
+    class: Monolog\Logger
+    arguments: ['logger']
+
+  context_router:
+    class: Steelbot\ContextRouter
+    arguments: ['@service_container']
+    calls:
+      - [setLogger, ['@logger']]
+

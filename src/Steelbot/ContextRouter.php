@@ -5,6 +5,7 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Steelbot\Context\Context;
 use Steelbot\Context\ContextInterface;
+use Steelbot\Context\ContextProvider;
 use Steelbot\Context\IncludeFileContext;
 use Steelbot\Context\PcreRouteMatcher;
 use Steelbot\Exception\ContextNotFoundException;
@@ -26,9 +27,9 @@ class ContextRouter implements LoggerAwareInterface
     protected $app;
 
     /**
-     * @var array
+     * @var ContextProvider[]
      */
-    protected $routes = [];
+    protected $contextProviders = [];
 
     /**
      * @var ContextInterface[]
@@ -43,13 +44,18 @@ class ContextRouter implements LoggerAwareInterface
     /**
      * @param \Steelbot\Application $app
      */
-    public function __construct(Application $app)
+    public function __construct($container)
     {
-        $this->app = $app;
+        $this->app = $container->get('kernel');
 
-        $helpMatcher = new PcreRouteMatcher('~^/help$~i');
-        $helpMatcher->setGroupChat(true);
-        $this->setRoute($helpMatcher, HelpContext::class);
+        //$helpMatcher = new PcreRouteMatcher('~^/help$~i');
+        //$helpMatcher->setGroupChat(true);
+        //$this->setRoute($helpMatcher, HelpContext::class);
+    }
+
+    public function addContextProvider(ContextProvider $contextProvider)
+    {
+        $this->contextProviders[] = $contextProvider;
     }
 
     /**
@@ -105,31 +111,6 @@ class ContextRouter implements LoggerAwareInterface
     }
 
     /**
-     * @param RouteMatcherInterface|string $regexp
-     * @param string|callable $handlerString
-     */
-    public function setRoute($matcher, $handler, array $help = []): self
-    {
-        if (is_string($matcher)) {
-            $matcher = new PcreRouteMatcher($matcher);
-            $matcher->setHelp($help);
-        }
-
-        $this->routes[$matcher->getPriority()][] = [$matcher, $handler];
-        ksort($this->routes);
-
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getRoutes(): array
-    {
-        return $this->routes;
-    }
-
-    /**
      * @param \Steelbot\Protocol\IncomingPayloadInterface $payload
      * @param \Steelbot\ClientInterface $client
      *
@@ -138,28 +119,11 @@ class ContextRouter implements LoggerAwareInterface
      */
     protected function findContext(IncomingPayloadInterface $payload, ClientInterface $client)
     {
-        foreach ($this->routes as $priority => $pairs) {
-            $this->logger->debug("Checking route priority", ['priority' => $priority]);
+        foreach ($this->contextProviders as $contextProvider) {
+            $this->logger->debug("Checking provider", ['class' => get_class($contextProvider)]);
 
-            foreach ($pairs as $pair) {
-                list($routeMatcher, $handler) = $pair;
-
-                if ($routeMatcher->match($payload)) {
-                    if (is_callable($handler)) {
-                        $this->logger->debug("Returning callable handler");
-                        return $handler;
-                    } elseif (class_exists($handler, true)) {
-                        $this->logger->debug("Returning class handler");
-                        return new $handler($this->app, $client);
-                    } elseif (file_exists($handler)) {
-                        $this->logger->debug("Returning anonymous class or closure", [
-                            'file' => $handler
-                        ]);
-                        return $this->createContextFromFile($this->app, $client, $handler);
-                    } else {
-                        throw new \UnexpectedValueException("Error resolving context: $handler");
-                    }
-                }
+            if ($context = $contextProvider->findContext($payload, $client, $this->app)) {
+                return $context;
             }
         }
 

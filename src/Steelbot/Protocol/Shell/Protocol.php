@@ -4,9 +4,11 @@ namespace Steelbot\Protocol\Shell;
 
 use Icicle\Socket\Stream;
 use Steelbot\ClientInterface;
+use Steelbot\Event\IncomingPayloadEvent;
 use Steelbot\Message;
 use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\Shell\Message\TextMessage;
+use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
  * Class Protocol
@@ -35,7 +37,7 @@ class Protocol extends AbstractProtocol
             $this->stdin = new Stream\ReadableStream(STDIN);
         }
 
-        $this->eventEmitter->emit(self::EVENT_POST_CONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_POST_CONNECT);
 
         while ($this->isConnected()) {
             $this->prompt();
@@ -51,9 +53,9 @@ class Protocol extends AbstractProtocol
      */
     public function disconnect()
     {
-        $this->eventEmitter->emit(self::EVENT_PRE_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_PRE_DISCONNECT);
         unset($this->client);
-        $this->eventEmitter->emit(self::EVENT_POST_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_POST_DISCONNECT);
 
         return true;
     }
@@ -99,7 +101,7 @@ class Protocol extends AbstractProtocol
         }
 
         $message = new TextMessage($data, $this->client);
-        $this->eventEmitter->emit(self::EVENT_PAYLOAD_RECEIVED, [$message]);
+        $this->eventDispatcher->dispatch(IncomingPayloadEvent::class, new IncomingPayloadEvent($message));
     }
 
     /**

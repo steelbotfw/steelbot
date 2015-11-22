@@ -2,7 +2,11 @@
 
 namespace Steelbot\Exception;
 
-class ContextNotFoundException extends BaseException
+/**
+ * Class ContextNotFoundException
+ * @package Steelbot\Exception
+ */
+class ContextNotFoundException extends CoreException
 {
 
 }

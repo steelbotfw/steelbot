@@ -6,8 +6,10 @@ use Icicle\Promise\Exception\TimeoutException;
 use Icicle\Coroutine;
 
 use Steelbot\ClientInterface;
+use Steelbot\Event\IncomingPayloadEvent;
 use Steelbot\Protocol\ImageMessageInterface;
 use Steelbot\Protocol\Payload\Outgoing\Image;
+use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
  * Class Protocol
@@ -58,7 +60,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
 
         $this->isConnected = true;
         $this->logger->info("Connected to server");
-        $this->eventEmitter->emit(self::EVENT_POST_CONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_POST_CONNECT);
 
         while ($this->isConnected) {
             yield $this->processUpdates();
@@ -72,10 +74,10 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      */
     public function disconnect()
     {
-        $this->eventEmitter->emit(self::EVENT_PRE_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_PRE_DISCONNECT);
         $this->isConnected = false;
         unset($this->api);
-        $this->eventEmitter->emit(self::EVENT_POST_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_POST_DISCONNECT);
 
         return true;
     }
@@ -124,7 +126,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
                 try {
                     $message = $incomingPayload->getMessage();
 
-                    $this->eventEmitter->emit(self::EVENT_PAYLOAD_RECEIVED, [$message]);
+                    $this->eventDispatcher->dispatch(IncomingPayloadEvent::class, new IncomingPayloadEvent($message));
                 } catch (\DomainException $e) {
                     $this->logger->error($e->getMessage());
                 }
