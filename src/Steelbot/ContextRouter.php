@@ -1,18 +1,12 @@
 <?php
 
 namespace Steelbot;
+
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use Steelbot\Context\Context;
-use Steelbot\Context\ContextInterface;
-use Steelbot\Context\ContextProvider;
-use Steelbot\Context\IncludeFileContext;
-use Steelbot\Context\PcreRouteMatcher;
+use Steelbot\Context\{ContextInterface, ContextProvider};
 use Steelbot\Exception\ContextNotFoundException;
-use Steelbot\Protocol\TextMessageInterface;
 use Steelbot\Protocol\IncomingPayloadInterface;
-use Steelbot\Context\RouteMatcherInterface;
-use Steelbot\Protocol\Telegram\HelpContext;
 
 /**
  * Class ContextRouter

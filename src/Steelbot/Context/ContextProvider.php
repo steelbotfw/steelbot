@@ -34,6 +34,9 @@ class ContextProvider implements LoggerAwareInterface
         if (is_string($matcher)) {
             $matcher = new PcreRouteMatcher($matcher);
             $matcher->setHelp($help);
+        } elseif (is_callable($matcher)) {
+            $matcher = new CallableRouteMatcher($matcher);
+            $matcher->setHelp($help);
         } elseif (!($matcher instanceof RouteMatcherInterface)) {
             throw new \DomainException("matcher must implement RouteMatcherInterface or be a string");
         }
@@ -74,7 +77,7 @@ class ContextProvider implements LoggerAwareInterface
     public function findContext(IncomingPayloadInterface $payload, ClientInterface $client, Application $app)
     {
         foreach ($this->routes as list($routeMatcher, $handler)) {
-            $this->logger->debug("Checking route");
+            $this->logger->debug("Checking route", ['class' => get_class($routeMatcher)]);
 
             if ($routeMatcher->match($payload)) {
                 if (is_callable($handler)) {
@@ -94,7 +97,7 @@ class ContextProvider implements LoggerAwareInterface
             }
         }
 
-        throw new ContextNotFoundException;
+        return false;
     }
 
     /**

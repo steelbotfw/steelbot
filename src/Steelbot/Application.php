@@ -4,8 +4,7 @@ namespace Steelbot;
 
 use Psr\Log\LoggerInterface;
 use Monolog;
-use Icicle\Coroutine;
-use Icicle\Loop;
+use Icicle\{Coroutine, Loop};
 use Steelbot\Context\ContextProviderCompilerPass;
 use Steelbot\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
