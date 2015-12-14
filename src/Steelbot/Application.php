@@ -31,6 +31,9 @@ class Application extends Kernel
      */
     public function __construct()
     {
+        if (!defined('STEELBOT_ENV')) {
+            define('STEELBOT_ENV', 'dev');
+        }
         parent::__construct(STEELBOT_ENV, STEELBOT_ENV == self::ENV_DEV);
     }
 
