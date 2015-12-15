@@ -21,21 +21,11 @@ use Symfony\Component\HttpKernel\Kernel;
 class Application extends Kernel
 {
     const ENV_DEV = 'dev';
+    const ENV_TEST = 'test';
     const ENV_STAGING = 'staging';
     const ENV_PROD = 'prod';
 
     protected $loadClassCache = false;
-
-    /**
-     * @param string $env
-     */
-    public function __construct()
-    {
-        if (!defined('STEELBOT_ENV')) {
-            define('STEELBOT_ENV', 'dev');
-        }
-        parent::__construct(STEELBOT_ENV, STEELBOT_ENV == self::ENV_DEV);
-    }
 
     /**
      * @return bool
