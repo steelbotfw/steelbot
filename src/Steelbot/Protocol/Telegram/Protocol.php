@@ -126,7 +126,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
                 try {
                     $message = $incomingPayload->getMessage();
 
-                    $this->eventDispatcher->dispatch(IncomingPayloadEvent::class, new IncomingPayloadEvent($message));
+                    $this->eventDispatcher->dispatch(IncomingPayloadEvent::NAME, new IncomingPayloadEvent($message));
                 } catch (\DomainException $e) {
                     $this->logger->error($e->getMessage());
                 }

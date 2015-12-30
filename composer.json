@@ -16,7 +16,7 @@
     "type": "project",
     "minimum-stability": "dev",
     "require": {
-        "php": ">=7",
+        "php": "~7.0.0",
 
         "icicleio/icicle": "*",
         "icicleio/http": "*",
@@ -33,7 +33,11 @@
     },
     "autoload": {
         "psr-4": {
-            "Steelbot\\": "src/Steelbot/",
+            "Steelbot\\": "src/Steelbot/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "Steelbot\\Tests\\": "tests/Steelbot/"
         }
     }

@@ -62,7 +62,7 @@ class Application extends Kernel
             }
         }, []);
 
-        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::class, $coroutine);
+        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $coroutine);
         return true;
     }
 

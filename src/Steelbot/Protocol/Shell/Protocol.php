@@ -101,7 +101,7 @@ class Protocol extends AbstractProtocol
         }
 
         $message = new TextMessage($data, $this->client);
-        $this->eventDispatcher->dispatch(IncomingPayloadEvent::class, new IncomingPayloadEvent($message));
+        $this->eventDispatcher->dispatch(IncomingPayloadEvent::NAME, new IncomingPayloadEvent($message));
     }
 
     /**

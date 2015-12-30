@@ -27,20 +27,19 @@ class ContextProvider implements LoggerAwareInterface
 
     /**
      * @param RouteMatcherInterface|string $regexp
-     * @param string|callable $handlerString
+     * @param string|callable $handler
      */
     public function setRoute($matcher, $handler, array $help = []): self
     {
         if (is_string($matcher)) {
             $matcher = new PcreRouteMatcher($matcher);
-            $matcher->setHelp($help);
         } elseif (is_callable($matcher)) {
             $matcher = new CallableRouteMatcher($matcher);
-            $matcher->setHelp($help);
         } elseif (!($matcher instanceof RouteMatcherInterface)) {
-            throw new \DomainException("matcher must implement RouteMatcherInterface or be a string");
+            throw new \DomainException("Matcher must implement RouteMatcherInterface or be a string");
         }
 
+        $matcher->setHelp($help);
         $this->routes[] = [$matcher, $handler];
         ksort($this->routes);
 
@@ -82,14 +81,17 @@ class ContextProvider implements LoggerAwareInterface
             if ($routeMatcher->match($payload)) {
                 if (is_callable($handler)) {
                     $this->logger->debug("Returning callable handler");
+
                     return $handler;
                 } elseif (class_exists($handler, true)) {
                     $this->logger->debug("Returning class handler");
+
                     return new $handler($app, $client);
                 } elseif (file_exists($handler)) {
                     $this->logger->debug("Returning anonymous class or closure", [
                         'file' => $handler
                     ]);
+
                     return $this->createContextFromFile($app, $client, $handler);
                 } else {
                     throw new \UnexpectedValueException("Error resolving context: $handler");

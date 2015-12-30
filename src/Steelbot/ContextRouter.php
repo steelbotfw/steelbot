@@ -41,15 +41,18 @@ class ContextRouter implements LoggerAwareInterface
     public function __construct($container)
     {
         $this->app = $container->get('kernel');
-
-        //$helpMatcher = new PcreRouteMatcher('~^/help$~i');
-        //$helpMatcher->setGroupChat(true);
-        //$this->setRoute($helpMatcher, HelpContext::class);
     }
 
-    public function addContextProvider(ContextProvider $contextProvider)
+    /**
+     * @param \Steelbot\Context\ContextProvider $contextProvider
+     *
+     * @return ContextRouter
+     */
+    public function addContextProvider(ContextProvider $contextProvider): self
     {
         $this->contextProviders[] = $contextProvider;
+
+        return $this;
     }
 
     /**
@@ -122,17 +125,5 @@ class ContextRouter implements LoggerAwareInterface
         }
 
         throw new ContextNotFoundException;
-    }
-
-    /**
-     * @param \Steelbot\Application $app
-     * @param \Steelbot\ClientInterface $client
-     * @param string $filename
-     *
-     * @return \Steelbot\Context\ContextInterface|\Closure
-     */
-    protected function createContextFromFile(Application $app, ClientInterface $client, $filename)
-    {
-        return include $filename;
     }
 }

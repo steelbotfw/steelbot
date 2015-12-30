@@ -11,6 +11,8 @@ use Symfony\Component\EventDispatcher\Event;
  */
 class IncomingPayloadEvent extends Event
 {
+    const NAME = self::class;
+
     /**
      * @var \Steelbot\Protocol\IncomingPayloadInterface
      */
