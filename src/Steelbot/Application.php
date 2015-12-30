@@ -6,10 +6,13 @@ use Psr\Log\LoggerInterface;
 use Monolog;
 use Icicle\{Coroutine, Loop};
 use Steelbot\Context\ContextProviderCompilerPass;
+use Steelbot\Event\AfterBootEvent;
 use Steelbot\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
+use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
 use Symfony\Component\HttpKernel\Bundle\BundleInterface;
 use Symfony\Component\HttpKernel\Kernel;
 
@@ -92,9 +95,11 @@ class Application extends Kernel
      */
     public function run()
     {
-        echo "Steelbot 4.0-dev\n\n";
+        echo "Steelbot 4.0.0-dev\n\n";
 
         $this->boot();
+
+        $this->getEventDispatcher()->dispatch(AfterBootEvent::NAME);
 
         $coroutine = Coroutine\create(function() {
             yield $this->getProtocol()->connect();
@@ -152,6 +157,7 @@ class Application extends Kernel
         $container = parent::buildContainer();
 
         $container->addCompilerPass(new ContextProviderCompilerPass());
+        $container->addCompilerPass(new RegisterListenersPass(), PassConfig::TYPE_BEFORE_REMOVING);
 
         return $container;
     }
