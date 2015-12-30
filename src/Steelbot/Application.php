@@ -28,7 +28,15 @@ class Application extends Kernel
     const ENV_STAGING = 'staging';
     const ENV_PROD = 'prod';
 
+    /**
+     * @var bool
+     */
     protected $loadClassCache = false;
+
+    /**
+     * @var array
+     */
+    protected $configs = [];
 
     /**
      * @return bool
@@ -124,6 +132,16 @@ class Application extends Kernel
     }
 
     /**
+     * Add application config.
+     *
+     * @param string|\Closure $config config filename or callback
+     */
+    public function addConfig($config)
+    {
+        $this->configs[] = $config;
+    }
+
+    /**
      * Returns an array of bundles to register.
      *
      * @return BundleInterface[] An array of bundle instances.
@@ -141,7 +159,9 @@ class Application extends Kernel
     public function registerContainerConfiguration(LoaderInterface $loader)
     {
         $loader->load(__DIR__.'/config/config.yml');
-        $loader->load(APP_DIR.'/config.yml');
+        foreach ($this->configs as $config) {
+            $loader->load($config);
+        }
     }
 
     public function getCacheDir()
