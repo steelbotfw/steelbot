@@ -73,15 +73,9 @@ class Api
         /** @var Response $response */
         $response = yield $this->get('/getMe');
 
-        $stream = $response->getBody();
-        $data = '';
-        while ($stream->isReadable()) {
-            $data .= yield $stream->read();
-        }
-
-        $data = json_decode($data, true);
-
-        yield new Entity\User($data['result']);
+        $body = yield $this->getResponseBody($response);
+        $body = json_decode($body, true);
+        yield new Entity\User($body['result']);
     }
 
     /**
@@ -128,15 +122,10 @@ class Api
 
         $response = yield $this->post('/sendMessage', $params);
 
-        $stream = $response->getBody();
-        $data = '';
-        while ($stream->isReadable()) {
-            $data .= yield $stream->read();
-        }
+        $body = yield $this->getResponseBody($response);
+        $body = json_decode($body, true);
 
-        $data = json_decode($data, true);
-
-        yield new Entity\Message($data['result']);
+        yield new Entity\Message($body['result']);
     }
 
     /**
@@ -163,7 +152,7 @@ class Api
                               string $caption = null,
                               int    $replyToMessageId = null,
                                      $replyMarkup = null
-                                    ): \Generator
+                             ): \Generator
     {
         $params = [
             'chat_id' => $chatId,
@@ -189,17 +178,12 @@ class Api
         ];
 
         $request = new Request('POST', $url, $headers, $mem);
-
         $response = yield $this->httpClient->send($request, []);
 
-        $stream = $response->getBody();
-        $data = '';
-        while ($stream->isReadable()) {
-            $data .= yield $stream->read();
-        }
-        $data = json_decode($data, true);
+        $body = yield $this->getResponseBody($response);
+        $body = json_decode($body, true);
 
-        yield new Entity\Message($data['result']);
+        yield new Entity\Message($body['result']);
     }
 
     /**
@@ -264,28 +248,22 @@ class Api
     public function sendChatAction(int $chatId, string $action): \Generator
     {
         $actions = [
-            'typing', // for text messages,
-            'upload_photo', // for photos,
-            'record_video',
-            'upload_video',
-            'record_audio',
-            'upload_audio',
-            'upload_document',
-            'find_location'
+            static::ACTION_TYPING,       // for text messages,
+            static::ACTION_UPLOAD_PHOTO, // for photos,
+            static::ACTION_RECORD_VIDEO,
+            static::ACTION_UPLOAD_VIDEO,
+            static::ACTION_RECORD_AUDIO,
+            static::ACTION_UPLOAD_AUDIO,
+            static::ACTION_UPLOAD_DOCUMENT,
+            static::ACTION_FIND_LOCATION
         ];
 
         $response = yield $this->post('/sendChatAction', [
             'chat_id' => $chatId,
             'action' => $action
         ]);
-
-        $stream = $response->getBody();
-        $data = '';
-        while ($stream->isReadable()) {
-            $data .= yield $stream->read();
-        }
-
-        $data = json_decode($data, true);
+        $body = yield $this->getResponseBody($response);
+        $body = json_decode($body, true);
 
         yield true;
     }
@@ -318,16 +296,11 @@ class Api
         ]);
 
         if ($response->getStatusCode() == 200) {
-            $data = null;
+            $body = yield $this->getResponseBody($response);
 
-            $stream = $response->getBody();
-            while ($stream->isReadable()) {
-                $data .= yield $stream->read();
-            }
+            $this->logger && $this->logger->debug("Data received", ['length' => strlen($body)]);
 
-            $this->logger && $this->logger->debug("Data received", ['length' => strlen($data)]);
-
-            $updates = json_decode($data, JSON_UNESCAPED_UNICODE);
+            $updates = json_decode($body, JSON_UNESCAPED_UNICODE);
             $collection = [];
 
             foreach ($updates['result'] as $updateData) {
@@ -396,5 +369,23 @@ class Api
         $paramStr = count($nonEmptyParams) ? '?'.http_build_query($nonEmptyParams) : null;
 
         return $this->baseUrl.$this->token.$pathName.$paramStr;
+    }
+
+    /**
+     * @param Response $response
+     *
+     * @return \Generator
+     *
+     * @resolve string
+     */
+    protected function getResponseBody(Response $response): \Generator
+    {
+        $data = '';
+        $stream = $response->getBody();
+        while ($stream->isReadable()) {
+            $data .= yield $stream->read();
+        }
+
+        return $data;
     }
 }
