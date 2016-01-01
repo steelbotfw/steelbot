@@ -12,7 +12,8 @@ class ContextTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $app = new Application(Application::ENV_TEST, true);
+        $env = 'test';
+        $app = new Application($env, true);
         $client = $this->getMock('Steelbot\ClientInterface');
         $this->context = new Context($app, $client);
     }
