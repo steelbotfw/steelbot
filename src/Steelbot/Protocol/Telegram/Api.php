@@ -295,23 +295,24 @@ class Api
             'timeout' => $timeout
         ]);
 
+        $updates = [];
+
         if ($response->getStatusCode() == 200) {
             $body = yield $this->getResponseBody($response);
 
             $this->logger && $this->logger->debug("Data received", ['length' => strlen($body)]);
 
-            $updates = json_decode($body, JSON_UNESCAPED_UNICODE);
-            $collection = [];
+            $updatesData = json_decode($body, JSON_UNESCAPED_UNICODE);
 
-            foreach ($updates['result'] as $updateData) {
-                $collection[] = new Update($updateData);
+            foreach ($updatesData['result'] as $updateData) {
+                $updates[] = new Update($updateData);
             }
 
-            yield $collection;
-
         } else {
-            $this->logger->error("Response http error: ".$response->getCode());
+            $this->logger->error("Response http error: ".$response->getStatusCode());
         }
+
+        yield $updates;
     }
 
     /**

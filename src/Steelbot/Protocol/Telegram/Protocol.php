@@ -2,14 +2,10 @@
 
 namespace Steelbot\Protocol\Telegram;
 
-use Icicle\Promise\Exception\TimeoutException;
 use Icicle\Coroutine;
-
 use Steelbot\ClientInterface;
 use Steelbot\Event\IncomingPayloadEvent;
-use Steelbot\Protocol\ImageMessageInterface;
 use Steelbot\Protocol\Payload\Outgoing\Image;
-use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
  * Class Protocol
@@ -133,9 +129,9 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
 
                 $this->lastUpdateId = $update->updateId;
             }
-        } catch (TimeoutException $timeoutException) {
-            $this->logger->debug('/getUpdates timeout');
-        } // @todo catch NotOk exception
+        } catch (\Icicle\Socket\Exception\Exception $exception) {
+            $this->logger->warning($exception->getMessage());
+        }// @todo catch NotOk exception
 
         return  true;
     }
