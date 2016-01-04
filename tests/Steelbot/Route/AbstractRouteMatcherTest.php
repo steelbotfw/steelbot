@@ -2,8 +2,7 @@
 
 namespace Steelbot\Tests\Context;
 
-use Steelbot\Application;
-use Steelbot\Context\AbstractRouteMatcher;
+use Steelbot\Route\AbstractRouteMatcher;
 
 class  AbstractRouteMatcherTest extends \PHPUnit_Framework_TestCase
 {

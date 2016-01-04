@@ -3,7 +3,7 @@
 namespace Steelbot\Tests\Context;
 
 use Steelbot\Context\ContextProvider;
-use Steelbot\Context\PcreRouteMatcher;
+use Steelbot\Route\PcreRouteMatcher;
 
 /**
  * Class ContextProviderTest

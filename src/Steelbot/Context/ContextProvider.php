@@ -8,6 +8,9 @@ use Steelbot\Application;
 use Steelbot\ClientInterface;
 use Steelbot\Exception\ContextNotFoundException;
 use Steelbot\Protocol\IncomingPayloadInterface;
+use Steelbot\Route\CallableRouteMatcher;
+use Steelbot\Route\PcreRouteMatcher;
+use Steelbot\Route\RouteMatcherInterface;
 
 /**
  * Class ContextProvider
