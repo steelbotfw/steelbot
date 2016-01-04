@@ -1,6 +1,6 @@
 <?php
 
-namespace Steelbot\Context;
+namespace Steelbot\Route;
 
 use Steelbot\Protocol\IncomingPayloadInterface;
 
