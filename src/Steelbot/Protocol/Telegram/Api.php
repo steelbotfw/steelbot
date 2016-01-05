@@ -51,6 +51,16 @@ class Api
     private $logger;
 
     /**
+     * @var string
+     */
+    private $host;
+
+    /**
+     * @var int
+     */
+    private $port;
+
+    /**
      * @param string $token
      */
     public function __construct(string $token, LoggerInterface $logger = null)
@@ -58,6 +68,19 @@ class Api
         $this->token = $token;
         $this->httpClient = new Client();
         $this->logger = $logger;
+
+        $urlInfo = parse_url($this->baseUrl);
+        $this->host = $urlInfo['host'];
+        switch ($urlInfo['scheme']) {
+            case 'http':
+                $this->port = 80;
+                break;
+            case 'https':
+                $this->port = 443;
+                break;
+            default:
+                throw new \DomainException("Unkown scheme");
+        }
     }
 
     /**
@@ -71,11 +94,11 @@ class Api
     public function getMe() : \Generator
     {
         /** @var Response $response */
-        $response = yield $this->get('/getMe');
+        $response = yield from $this->get('/getMe');
 
-        $body = yield $this->getResponseBody($response);
+        $body = yield from $this->getResponseBody($response);
         $body = json_decode($body, true);
-        yield new Entity\User($body['result']);
+        return new Entity\User($body['result']);
     }
 
     /**
@@ -120,12 +143,12 @@ class Api
             $params['reply_markup'] = $replyMarkup;
         }
 
-        $response = yield $this->post('/sendMessage', $params);
+        $response = yield from $this->post('/sendMessage', $params);
 
-        $body = yield $this->getResponseBody($response);
+        $body = yield from $this->getResponseBody($response);
         $body = json_decode($body, true);
 
-        yield new Entity\Message($body['result']);
+        return new Entity\Message($body['result']);
     }
 
     /**
@@ -289,7 +312,7 @@ class Api
     public function getUpdates(int $lastUpdateId, int $limit = 5, int $timeout = 30) : \Generator
     {
         /** @var Response $response */
-        $response = yield $this->post('/getUpdates', [
+        $response = yield from $this->post('/getUpdates', [
             'offset'  => $lastUpdateId + 1,
             'limit'   => $limit,
             'timeout' => $timeout
@@ -298,7 +321,7 @@ class Api
         $updates = [];
 
         if ($response->getStatusCode() == 200) {
-            $body = yield $this->getResponseBody($response);
+            $body = yield from $this->getResponseBody($response);
 
             $this->logger && $this->logger->debug("Data received", ['length' => strlen($body)]);
 
@@ -312,7 +335,7 @@ class Api
             $this->logger->error("Response http error: ".$response->getStatusCode());
         }
 
-        yield $updates;
+        return $updates;
     }
 
     /**
@@ -329,13 +352,12 @@ class Api
      *
      * @yield Generator
      */
-    protected function get(string $pathName, array $params = [])
+    protected function get(string $pathName, array $params = []): \Generator
     {
         $this->logger && $this->logger->debug("Requesting $pathName", $params);
-
         $url = $this->buildUrl($pathName, $params);
 
-        yield $this->httpClient->request('GET', $url, [], null, [
+        return $this->request('GET', $url, [], null, [
             'timeout' => 60
         ]);
     }
@@ -346,15 +368,29 @@ class Api
      *
      * @yield Generator
      */
-    protected function post(string $pathName, array $params = [])
+    protected function post(string $pathName, array $params = []): \Generator
     {
         $this->logger && $this->logger->debug("Requesting $pathName", $params);
-
         $url = $this->buildUrl($pathName, $params);
 
-        yield $this->httpClient->request('POST', $url, [], null, [
+        return $this->request('POST', $url, [], null, [
             'timeout' => 60
         ]);
+    }
+
+    /**
+     * @param string $method
+     * @param        $uri
+     * @param array  $headers
+     * @param null   $body
+     * @param array  $options
+     *
+     * @return \Generator
+     */
+    protected function request(string $method, $uri, array $headers = [], $body = null, array $options = []): \Generator
+    {
+        $socket = (yield \Icicle\Dns\connect($this->host, $this->port));
+        return (yield $this->httpClient->request($socket, $method, $uri, $headers, $body, $options));
     }
 
     /**

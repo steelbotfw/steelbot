@@ -4,7 +4,8 @@ namespace Steelbot;
 
 use Psr\Log\LoggerInterface;
 use Monolog;
-use Icicle\{Coroutine, Loop};
+use Icicle\Coroutine;
+use Icicle\Loop;
 use Steelbot\Context\ContextProviderCompilerPass;
 use Steelbot\Event\AfterBootEvent;
 use Steelbot\Event\IncomingPayloadEvent;
@@ -38,7 +39,7 @@ class Application extends Kernel
      */
     public function registerPayloadHandler(): bool
     {
-        $coroutine = Coroutine\wrap(function (IncomingPayloadEvent $event) {
+        $callback = function (IncomingPayloadEvent $event) {
             $payload = $event->getPayload();
 
             $this->getLogger()->info("Received payload.", [
@@ -46,18 +47,26 @@ class Application extends Kernel
                 'content' => (string)$payload
             ]);
 
-            try {
-                yield $this->getContextRouter()->handle($payload);
-            } catch (ContextNotFoundException $e) {
-                $this->getLogger()->debug("Handle not found");
+            $callback = function () use ($payload): \Generator
+            {
+                try {
+                    yield $this->getContextRouter()->handle($payload);
+                } catch (ContextNotFoundException $e) {
+                    $this->getLogger()->debug("Handle not found");
 
-                if (!$payload->isGroupChatMessage()) {
-                    yield $this->getProtocol()->send($payload->getFrom(), "Command not found");
+                    if (!$payload->isGroupChatMessage()) {
+                        yield $this->getProtocol()->send($payload->getFrom(), "Command not found");
+                    }
                 }
-            }
-        }, []);
+            };
 
-        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $coroutine);
+            $coroutine = Coroutine\create($callback);
+            $coroutine->done(null, function ($e) {
+                printf("Exception: %s\n", $e);
+            });
+        };
+
+        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $callback);
         return true;
     }
 
@@ -107,7 +116,7 @@ class Application extends Kernel
         $coroutine = Coroutine\create(function() {
             yield $this->getProtocol()->connect();
         });
-        $coroutine->done(null, function (\Exception $e) {
+        $coroutine->done(null, function ($e) {
             printf("Exception: %s\n", $e);
         });
 
@@ -157,11 +166,6 @@ class Application extends Kernel
         foreach ($this->configs as $config) {
             $loader->load($config);
         }
-    }
-
-    public function getCacheDir()
-    {
-        return APP_DIR.'/cache';
     }
 
     /**

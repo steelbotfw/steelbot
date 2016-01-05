@@ -44,13 +44,13 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
     /**
      * @return boolean
      */
-    public function connect()
+    public function connect(): \Generator
     {
         $this->logger->info("Connecting to server");
 
         $this->api = new Api($this->token, $this->logger);
 
-        $user = yield $this->api->getMe();
+        $user = yield from $this->api->getMe();
 
         $this->logger->info("Bot identified as @{$user->username}, {$user->firstName}, ID {$user->id}");
 
@@ -114,7 +114,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
     protected function processUpdates()
     {
         try {
-            $updates = yield $this->api->getUpdates($this->lastUpdateId);
+            $updates = yield from $this->api->getUpdates($this->lastUpdateId);
 
             foreach ($updates as $update) {
                 $incomingPayload = new IncomingPayload($update);

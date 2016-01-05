@@ -4,7 +4,7 @@ namespace Steelbot\Protocol\Telegram;
 
 
 use Steelbot\Context\Context;
-use Steelbot\Context\RouteMatcherInterface;
+use Steelbot\Route\RouteMatcherInterface;
 use Steelbot\Protocol\IncomingPayloadInterface;
 
 /**
