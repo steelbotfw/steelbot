@@ -20,6 +20,7 @@
 
         "icicleio/icicle": "*",
         "icicleio/http": "*",
+        "icicleio/dns": "*",
 
         "symfony/http-kernel": "dev-master",
         "symfony/dependency-injection": "dev-master",
