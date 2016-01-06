@@ -1,13 +1,13 @@
 <?php
 
-namespace Steelbot\Event;
+namespace Steelbot\Protocol\Event;
 
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Symfony\Component\EventDispatcher\Event;
 
 /**
  * Class IncomingPayloadEvent
- * @package Steelbot\Event
+ * @package Steelbot\Protocol\Event
  */
 class IncomingPayloadEvent extends Event
 {

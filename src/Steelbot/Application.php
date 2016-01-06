@@ -8,7 +8,7 @@ use Icicle\Coroutine;
 use Icicle\Loop;
 use Steelbot\Context\ContextProviderCompilerPass;
 use Steelbot\Event\AfterBootEvent;
-use Steelbot\Event\IncomingPayloadEvent;
+use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -39,7 +39,7 @@ class Application extends Kernel
      */
     public function registerPayloadHandler(): bool
     {
-        $callback = function (IncomingPayloadEvent $event) {
+        $eventCallback = function (IncomingPayloadEvent $event) {
             $payload = $event->getPayload();
 
             $this->getLogger()->info("Received payload.", [
@@ -47,7 +47,7 @@ class Application extends Kernel
                 'content' => (string)$payload
             ]);
 
-            $callback = function () use ($payload): \Generator
+            $callback = function ($payload): \Generator
             {
                 try {
                     yield $this->getContextRouter()->handle($payload);
@@ -60,13 +60,10 @@ class Application extends Kernel
                 }
             };
 
-            $coroutine = Coroutine\create($callback);
-            $coroutine->done(null, function ($e) {
-                printf("Exception: %s\n", $e);
-            });
+            Coroutine\create($callback, $payload);
         };
 
-        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $callback);
+        $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $eventCallback);
         return true;
     }
 
@@ -110,14 +107,10 @@ class Application extends Kernel
         echo "Steelbot 4.0.0-dev\n\n";
 
         $this->boot();
-
         $this->getEventDispatcher()->dispatch(AfterBootEvent::NAME);
 
-        $coroutine = Coroutine\create(function() {
+        Coroutine\create(function() {
             yield $this->getProtocol()->connect();
-        });
-        $coroutine->done(null, function ($e) {
-            printf("Exception: %s\n", $e);
         });
 
         $this->registerPayloadHandler();

@@ -4,7 +4,7 @@ namespace Steelbot\Protocol\Telegram;
 
 use Icicle\Coroutine;
 use Steelbot\ClientInterface;
-use Steelbot\Event\IncomingPayloadEvent;
+use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Protocol\Payload\Outgoing\Image;
 
 /**
@@ -46,13 +46,11 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      */
     public function connect(): \Generator
     {
-        $this->logger->info("Connecting to server");
-
         $this->api = new Api($this->token, $this->logger);
-
+        $this->logger->info("Connecting to server");
         $user = yield from $this->api->getMe();
 
-        $this->logger->info("Bot identified as @{$user->username}, {$user->firstName}, ID {$user->id}");
+        $this->logger->info("Bot identified as @{$user->username}, {$user->firstName} {$user->lastName}, ID {$user->id}");
 
         $this->isConnected = true;
         $this->logger->info("Connected to server");

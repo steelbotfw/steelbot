@@ -6,7 +6,7 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Steelbot\ClientInterface;
 use Steelbot\Protocol\OutgoingPayloadInterface;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Interface ProtocolInterface
@@ -34,7 +34,7 @@ abstract class AbstractProtocol implements LoggerAwareInterface
     /**
      * @param $loop
      */
-    public function __construct(EventDispatcher $eventDispatcher)
+    public function __construct(EventDispatcherInterface $eventDispatcher)
     {
         $this->eventDispatcher = $eventDispatcher;
     }
