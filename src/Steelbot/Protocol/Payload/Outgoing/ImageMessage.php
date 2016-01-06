@@ -4,10 +4,10 @@ namespace Steelbot\Protocol\Payload\Outgoing;
 
 use Steelbot\Protocol\OutgoingPayloadInterface;
 
-class Image implements OutgoingPayloadInterface
+class ImageMessage implements OutgoingPayloadInterface
 {
     /**
-     * @var \Steelbot\Protocol\Payload\Outgoing\string
+     * @var string
      */
     private $filename;
 

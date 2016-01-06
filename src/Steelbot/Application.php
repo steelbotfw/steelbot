@@ -10,6 +10,7 @@ use Steelbot\Context\ContextProviderCompilerPass;
 use Steelbot\Event\AfterBootEvent;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
+use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
@@ -50,17 +51,26 @@ class Application extends Kernel
             $callback = function ($payload): \Generator
             {
                 try {
-                    yield $this->getContextRouter()->handle($payload);
+                    yield from $this->getContextRouter()->handle($payload);
                 } catch (ContextNotFoundException $e) {
                     $this->getLogger()->debug("Handle not found");
 
                     if (!$payload->isGroupChatMessage()) {
-                        yield $this->getProtocol()->send($payload->getFrom(), "Command not found");
+                        yield from $this->getProtocol()->send($payload->getFrom(), new TextMessage("Command not found"));
                     }
                 }
             };
 
-            Coroutine\create($callback, $payload);
+            $coroutine = Coroutine\create($callback, $payload);
+            $coroutine->done(null, function(\Throwable $e) {
+                $this->getLogger()->error("Throwable catched", [
+                    'message' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            });
         };
 
         $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $eventCallback);
@@ -109,8 +119,17 @@ class Application extends Kernel
         $this->boot();
         $this->getEventDispatcher()->dispatch(AfterBootEvent::NAME);
 
-        Coroutine\create(function() {
-            yield $this->getProtocol()->connect();
+        $coroutine = Coroutine\create(function() {
+            yield from $this->getProtocol()->connect();
+        });
+        $coroutine->done(null, function(\Throwable $e) {
+            $this->getLogger()->error("Throwable catched", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
         });
 
         $this->registerPayloadHandler();

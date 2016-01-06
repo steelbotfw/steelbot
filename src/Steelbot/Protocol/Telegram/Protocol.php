@@ -5,7 +5,9 @@ namespace Steelbot\Protocol\Telegram;
 use Icicle\Coroutine;
 use Steelbot\ClientInterface;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
-use Steelbot\Protocol\Payload\Outgoing\Image;
+use Steelbot\Protocol\OutgoingPayloadInterface;
+use Steelbot\Protocol\Payload\Outgoing\ImageMessage;
+use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 
 /**
  * Class Protocol
@@ -90,11 +92,11 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      *
      * @return mixed
      */
-    public function send(ClientInterface $client, $payload, $replyMarkup = null)
+    public function send(ClientInterface $client, OutgoingPayloadInterface $payload, $replyMarkup = null): \Generator
     {
-        if (is_string($payload)) {
-            return $this->api->sendMessage($client->getId(), $payload, 'Markdown', false, null, $replyMarkup);
-        } elseif ($payload instanceof Image) {
+        if ($payload instanceof TextMessage) {
+            return $this->api->sendMessage($client->getId(), $payload->getText(), 'Markdown', false, null, $replyMarkup);
+        } elseif ($payload instanceof ImageMessage) {
             return $this->api->sendPhoto($client->getId(), $payload->getResource(), null, null, null);
         }
 

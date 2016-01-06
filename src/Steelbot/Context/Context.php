@@ -6,7 +6,12 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Steelbot\Application;
 use Steelbot\ClientInterface;
+use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 
+/**
+ * Class Context
+ * @package Steelbot\Context
+ */
 class Context implements ContextInterface, LoggerAwareInterface
 {
     /**
@@ -69,11 +74,13 @@ class Context implements ContextInterface, LoggerAwareInterface
      * @param string $text
      * @param ...$args
      *
-     * @return mixed
+     * @return \Generator
      */
-    protected function answer(string $text)
+    protected function answer(string $text): \Generator
     {
-        return $this->app->getProtocol()->send($this->client, $text);
+        $textMessage = new TextMessage($text);
+
+        return $this->app->getProtocol()->send($this->client, $textMessage);
     }
 
     /**

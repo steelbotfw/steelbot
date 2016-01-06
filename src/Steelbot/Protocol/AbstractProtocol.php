@@ -65,9 +65,9 @@ abstract class AbstractProtocol implements LoggerAwareInterface
 
     /**
      * @param \Steelbot\ClientInterface $client
-     * @param mixed $payload
+     * @param OutgoingPayloadInterface $payload
      *
      * @return mixed
      */
-    abstract public function send(ClientInterface $client, $payload);
+    abstract public function send(ClientInterface $client, OutgoingPayloadInterface $payload): \Generator;
 }
