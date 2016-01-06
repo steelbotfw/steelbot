@@ -18,7 +18,7 @@
     "require": {
         "php": ">=7.0",
 
-        "icicleio/icicle": "*",
+        "icicleio/icicle": "dev-master",
         "icicleio/http": "*",
         "icicleio/dns": "*",
 
