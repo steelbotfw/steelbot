@@ -5,7 +5,6 @@ namespace Steelbot\Protocol\Shell;
 use Icicle\Socket\Stream;
 use Steelbot\ClientInterface;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
-use Steelbot\Message;
 use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\Shell\Message\TextMessage;
 use Symfony\Component\EventDispatcher\GenericEvent;
