@@ -1,6 +1,6 @@
 <?php
 
-namespace Steelbot\Protocol\Telegram\Message;
+namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
 use Steelbot\Protocol\IncomingPayloadInterface;
@@ -8,8 +8,6 @@ use Steelbot\Protocol\LocationMessageInterface;
 
 /**
  * Class LocationMessage
- *
- * @package Steelbot\Protocol\Telegram\Message
  */
 class LocationMessage extends AbstractMessage implements LocationMessageInterface, IncomingPayloadInterface
 {
@@ -24,8 +22,10 @@ class LocationMessage extends AbstractMessage implements LocationMessageInterfac
     private $latitude;
 
     /**
-     * @param string $text
-     * {@inheritdoc}
+     * @param float           $longitude
+     * @param float           $latitude
+     * @param ClientInterface $from
+     * @param ClientInterface $user
      */
     public function __construct(float $longitude, float $latitude, ClientInterface $from, ClientInterface $user)
     {

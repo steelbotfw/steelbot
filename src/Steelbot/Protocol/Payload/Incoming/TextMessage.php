@@ -1,11 +1,14 @@
 <?php
 
-namespace Steelbot\Protocol\Telegram\Message;
+namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\TextMessageInterface;
 
+/**
+ * Class TextMessage
+ */
 class TextMessage extends AbstractMessage implements TextMessageInterface, IncomingPayloadInterface
 {
     /**
@@ -14,8 +17,9 @@ class TextMessage extends AbstractMessage implements TextMessageInterface, Incom
     private $text;
 
     /**
-     * @param string $text
-     * {@inheritdoc}
+     * @param string|string   $text
+     * @param ClientInterface $from
+     * @param ClientInterface $user
      */
     public function __construct(string $text, ClientInterface $from, ClientInterface $user)
     {
@@ -24,7 +28,7 @@ class TextMessage extends AbstractMessage implements TextMessageInterface, Incom
     }
 
     /**
-     * @return \Steelbot\Protocol\Telegram\Message\string|string
+     * @return string
      */
     public function getText() : string
     {
@@ -36,6 +40,9 @@ class TextMessage extends AbstractMessage implements TextMessageInterface, Incom
         return $this->text;
     }
 
+    /**
+     * @return string
+     */
     public function getType(): string
     {
         return self::TYPE_TEXT;

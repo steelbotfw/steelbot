@@ -4,9 +4,12 @@ namespace Steelbot\Protocol\Telegram;
 
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\Telegram\Entity\Update;
-use Steelbot\Protocol\Telegram\Message\LocationMessage;
-use Steelbot\Protocol\Telegram\Message\TextMessage;
+use Steelbot\Protocol\Payload\Incoming\LocationMessage;
+use Steelbot\Protocol\Payload\Incoming\TextMessage;
 
+/**
+ * Class IncomingPayload
+ */
 class IncomingPayload implements IncomingPayloadInterface
 {
     /**
@@ -20,7 +23,7 @@ class IncomingPayload implements IncomingPayloadInterface
     private $type;
 
     /**
-     * @var
+     * @var \Steelbot\Protocol\Telegram\Entity\Message
      */
     private $message;
 
@@ -38,7 +41,7 @@ class IncomingPayload implements IncomingPayloadInterface
     }
 
     /**
-     * @return strings
+     * @return string
      */
     public function getType(): string
     {
@@ -48,7 +51,7 @@ class IncomingPayload implements IncomingPayloadInterface
     /**
      * Message factory.
      *
-     * @return \Steelbot\Protocol\Telegram\LocationMessage|\Steelbot\Protocol\Telegram\TextMessage
+     * @return LocationMessage|TextMessage
      */
     public function getMessage()
     {

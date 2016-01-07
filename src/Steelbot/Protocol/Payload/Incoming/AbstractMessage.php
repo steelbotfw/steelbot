@@ -1,6 +1,6 @@
 <?php
 
-namespace Steelbot\Protocol\Telegram\Message;
+namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
 

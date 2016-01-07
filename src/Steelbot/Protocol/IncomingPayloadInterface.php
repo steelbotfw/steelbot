@@ -2,6 +2,10 @@
 
 namespace Steelbot\Protocol;
 
+/**
+ * Interface IncomingPayloadInterface
+ * @package Steelbot\Protocol
+ */
 interface IncomingPayloadInterface
 {
     const TYPE_TEXT = 'text';
