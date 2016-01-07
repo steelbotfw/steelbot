@@ -2,22 +2,21 @@
 
 namespace Steelbot\Context;
 
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerInterface;
-use Steelbot\Application;
 use Steelbot\ClientInterface;
+use Steelbot\Protocol\AbstractProtocol;
+use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 
 /**
  * Class Context
  * @package Steelbot\Context
  */
-class Context implements ContextInterface, LoggerAwareInterface
+abstract class Context implements ContextInterface
 {
     /**
-     * @var \Steelbot\Application
+     * @var \Steelbot\Protocol\AbstractProtocol
      */
-    protected $app;
+    protected $protocol;
 
     /**
      * @var \Steelbot\ClientInterface
@@ -30,29 +29,21 @@ class Context implements ContextInterface, LoggerAwareInterface
     protected $isResolved = false;
 
     /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
-     * @param \Steelbot\Application $app
+     * @param \Steelbot\Protocol\AbstractProtocol $protocol
      * @param \Steelbot\ClientInterface $client
      */
-    public function __construct(Application $app, ClientInterface $client)
+    public function __construct(AbstractProtocol $protocol, ClientInterface $client)
     {
-        $this->app = $app;
+        $this->protocol = $protocol;
         $this->client = $client;
     }
 
     /**
-     * Handle context
+     * Handle incoming payload
      *
-     * @param $message
+     * @param IncomingPayloadInterface $payload
      */
-    public function handle($message) {
-        echo "Recieved message: $message FROM ".$message->getClient()."\n";
-        $this->resolve();
-    }
+    abstract public function handle(IncomingPayloadInterface $payload);
 
     /**
      * @return bool
@@ -71,6 +62,8 @@ class Context implements ContextInterface, LoggerAwareInterface
     }
 
     /**
+     * Send message to sender
+     *
      * @param string $text
      * @param ...$args
      *
@@ -80,18 +73,6 @@ class Context implements ContextInterface, LoggerAwareInterface
     {
         $textMessage = new TextMessage($text);
 
-        return $this->app->getProtocol()->send($this->client, $textMessage);
-    }
-
-    /**
-     * Sets a logger instance on the object.
-     *
-     * @param LoggerInterface $logger
-     *
-     * @return null
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
+        return $this->protocol->send($this->client, $textMessage);
     }
 }

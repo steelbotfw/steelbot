@@ -2,9 +2,11 @@
 
 namespace Steelbot\Context;
 
+use Steelbot\Protocol\IncomingPayloadInterface;
+
 interface ContextInterface
 {
-    public function handle($payload);
+    public function handle(IncomingPayloadInterface $payload);
 
     /**
      * @return boolean
