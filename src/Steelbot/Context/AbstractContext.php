@@ -8,10 +8,10 @@ use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 
 /**
- * Class Context
+ * Class AbstractContext
  * @package Steelbot\Context
  */
-abstract class Context implements ContextInterface
+abstract class AbstractContext implements ContextInterface
 {
     /**
      * @var \Steelbot\Protocol\AbstractProtocol

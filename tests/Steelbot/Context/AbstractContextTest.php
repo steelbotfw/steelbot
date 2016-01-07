@@ -2,13 +2,13 @@
 
 namespace Steelbot\Tests\Context;
 
-use Steelbot\Context\Context;
+use Steelbot\Context\AbstractContext;
 use Steelbot\Protocol\AbstractProtocol;
 
-class ContextTest extends \PHPUnit_Framework_TestCase
+class AbstractContextTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var Context
+     * @var AbstractContext
      */
     protected $context;
 
@@ -18,7 +18,7 @@ class ContextTest extends \PHPUnit_Framework_TestCase
         $eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
         $protocol = $this->getMockForAbstractClass(AbstractProtocol::class, [$eventDispatcher]);
 
-        $this->context = $this->getMockForAbstractClass(Context::class, [$protocol, $client]);
+        $this->context = $this->getMockForAbstractClass(AbstractContext::class, [$protocol, $client]);
     }
 
     public function testIsResolved()
