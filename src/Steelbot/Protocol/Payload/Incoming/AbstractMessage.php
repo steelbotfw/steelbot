@@ -7,7 +7,6 @@ use Steelbot\ClientInterface;
 /**
  * Class AbstractMessage
  *
- * @package Steelbot\Protocol\Telegram\Message
  */
 abstract class AbstractMessage
 {

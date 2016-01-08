@@ -30,12 +30,12 @@ class TextMessage extends AbstractMessage implements TextMessageInterface, Incom
     /**
      * @return string
      */
-    public function getText() : string
+    public function getText(): string
     {
         return $this->text;
     }
 
-    public function __toString() : string
+    public function __toString(): string
     {
         return $this->text;
     }

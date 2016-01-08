@@ -24,7 +24,7 @@ class ImageMessage implements OutgoingPayloadInterface
     /**
      * @return resource
      */
-    public function getResource(): resource
+    public function getResource()
     {
         $resource = fopen($this->filename, 'r');
 

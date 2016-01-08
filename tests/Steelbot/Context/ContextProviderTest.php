@@ -64,6 +64,26 @@ namespace Steelbot\Tests\Context {
             $this->assertCount(1, $contextProvider->getRoutes());
         }
 
+        public function testGetRoutes()
+        {
+            $contextProvider = new ContextProvider();
+            $this->assertCount(0, $contextProvider->getRoutes());
+
+            $matcher = new PcreRouteMatcher('~a~');
+            $handler = function () {
+                return true;
+            };
+
+            $matcher2 = new PcreRouteMatcher('~b~');
+
+            $contextProvider->setRoute($matcher, $handler);
+            $contextProvider->setRoute($matcher2, $handler);
+
+            $getRoutes = $contextProvider->getRoutes();
+            $this->assertCount(2, $getRoutes);
+            $this->assertSame([[$matcher, $handler], [$matcher2, $handler]], $getRoutes);
+        }
+
         public function testFindContextNotFound()
         {
             $environment = 'test';
