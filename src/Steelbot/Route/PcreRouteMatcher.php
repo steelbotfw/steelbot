@@ -18,7 +18,7 @@ class PcreRouteMatcher extends AbstractRouteMatcher
     protected $regexp;
 
     /**
-     * @param \Steelbot\Context\string $regexp
+     * @param string $regexp
      * @param bool|true $enablePrivateChat
      * @param bool|true $enableGroupChat
      */

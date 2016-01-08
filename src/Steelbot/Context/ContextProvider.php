@@ -72,7 +72,7 @@ class ContextProvider implements LoggerAwareInterface
      * @param \Steelbot\Protocol\IncomingPayloadInterface $payload
      * @param \Steelbot\ClientInterface $client
      *
-     * @return \Steelbot\Context\ContextInterface
+     * @return \Steelbot\Context\ContextInterface|false
      * @throws \Steelbot\Exception\ContextNotFoundException
      */
     public function findContext(IncomingPayloadInterface $payload, ClientInterface $client, Application $app)
@@ -88,7 +88,7 @@ class ContextProvider implements LoggerAwareInterface
                 } elseif (class_exists($handler, true)) {
                     $this->logger->debug("Returning class handler");
 
-                    return new $handler($app, $client);
+                    return new $handler($app->getProtocol(), $client);
                 } elseif (file_exists($handler)) {
                     $this->logger->debug("Returning anonymous class or closure", [
                         'file' => $handler
