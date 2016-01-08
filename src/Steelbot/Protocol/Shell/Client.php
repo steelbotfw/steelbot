@@ -6,7 +6,6 @@ use Steelbot\ClientInterface;
 
 /**
  * Class Client
- * @package Steelbot\Protocol\Shell
  */
 class Client implements ClientInterface
 {

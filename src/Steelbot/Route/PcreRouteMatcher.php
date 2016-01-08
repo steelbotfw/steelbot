@@ -3,7 +3,7 @@
 namespace Steelbot\Route;
 
 use Steelbot\Protocol\IncomingPayloadInterface;
-use Steelbot\Protocol\TextMessageInterface;
+use Steelbot\Protocol\Payload\Incoming\TextMessage;
 
 /**
  * Class PcreRouteMatcher
@@ -35,7 +35,7 @@ class PcreRouteMatcher extends AbstractRouteMatcher
      */
     public function match(IncomingPayloadInterface $payload): bool
     {
-        return ($payload instanceof TextMessageInterface) &&
+        return ($payload instanceof TextMessage) &&
         (
             ($this->enablePrivateChat && !$payload->isGroupChatMessage()) ||
             ($this->enableGroupChat && $payload->isGroupChatMessage())

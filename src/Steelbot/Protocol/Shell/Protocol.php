@@ -6,12 +6,11 @@ use Icicle\Socket\Stream;
 use Steelbot\ClientInterface;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Protocol\AbstractProtocol;
-use Steelbot\Protocol\Shell\Message\TextMessage;
-use Symfony\Component\EventDispatcher\GenericEvent;
+use Steelbot\Protocol\Payload\Incoming\TextMessage;
 
 /**
  * Class Protocol
- * @package Steelbot\Protocol\Shell
+ * @todo
  */
 class Protocol extends AbstractProtocol
 {
@@ -99,7 +98,7 @@ class Protocol extends AbstractProtocol
                 return;
         }
 
-        $message = new TextMessage($data, $this->client);
+        $message = new TextMessage($data, $this->client, $this->client);
         $this->eventDispatcher->dispatch(IncomingPayloadEvent::NAME, new IncomingPayloadEvent($message));
     }
 
