@@ -3,6 +3,7 @@
 namespace Steelbot\Context;
 
 use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Steelbot\Application;
 use Steelbot\ClientInterface;
@@ -17,6 +18,8 @@ use Steelbot\Route\RouteMatcherInterface;
  */
 class ContextProvider implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
      * @var LoggerInterface
      */
@@ -54,18 +57,6 @@ class ContextProvider implements LoggerAwareInterface
     public function getRoutes(): array
     {
         return $this->routes;
-    }
-
-    /**
-     * Sets a logger instance on the object.
-     *
-     * @param LoggerInterface $logger
-     *
-     * @return null
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
     }
 
     /**
