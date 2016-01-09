@@ -7,18 +7,22 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use Steelbot\Application;
 use Steelbot\ClientInterface;
+use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Route\CallableRouteMatcher;
 use Steelbot\Route\PcreRouteMatcher;
 use Steelbot\Route\RouteMatcherInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
 /**
  * Class ContextProvider
  * @package Steelbot\Context
  */
-class ContextProvider implements LoggerAwareInterface
+class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
 {
     use LoggerAwareTrait;
+    use ContainerAwareTrait;
 
     /**
      * @var LoggerInterface
@@ -85,7 +89,7 @@ class ContextProvider implements LoggerAwareInterface
                         'file' => $handler
                     ]);
 
-                    return $this->createContextFromFile($app, $client, $handler);
+                    return $this->createContextFromFile($app->getProtocol(), $client, $handler);
                 } else {
                     throw new \UnexpectedValueException("Error resolving context: $handler");
                 }
@@ -102,7 +106,7 @@ class ContextProvider implements LoggerAwareInterface
      *
      * @return \Steelbot\Context\ContextInterface|\Closure
      */
-    protected function createContextFromFile(Application $app, ClientInterface $client, $filename)
+    protected function createContextFromFile(AbstractProtocol $protocol, ClientInterface $client, $filename)
     {
         return include $filename;
     }

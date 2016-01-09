@@ -3,9 +3,8 @@
 namespace Steelbot\Protocol;
 
 use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerInterface;
+use Psr\Log\LoggerAwareTrait;
 use Steelbot\ClientInterface;
-use Steelbot\Protocol\OutgoingPayloadInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -14,6 +13,8 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 abstract class AbstractProtocol implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     const EVENT_PRE_CONNECT        = 'protocol.preConnect';
     const EVENT_POST_CONNECT       = 'protocol.postConnect';
     const EVENT_PRE_DISCONNECT     = 'protocol.preDisconnect';
@@ -27,25 +28,11 @@ abstract class AbstractProtocol implements LoggerAwareInterface
     protected $eventDispatcher;
 
     /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
      * @param $loop
      */
     public function __construct(EventDispatcherInterface $eventDispatcher)
     {
         $this->eventDispatcher = $eventDispatcher;
-    }
-
-    /**
-     * @param \Psr\Log\LoggerInterface $logger
-     * @return null
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
     }
 
     /**
