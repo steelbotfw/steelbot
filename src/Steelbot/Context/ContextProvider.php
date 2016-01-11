@@ -70,7 +70,7 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
      * @return \Steelbot\Context\ContextInterface|false
      * @throws \Steelbot\Exception\ContextNotFoundException
      */
-    public function findContext(IncomingPayloadInterface $payload, ClientInterface $client, Application $app)
+    public function findContext(IncomingPayloadInterface $payload, ClientInterface $client)
     {
         foreach ($this->routes as list($routeMatcher, $handler)) {
             $this->logger->debug("Checking route", ['class' => get_class($routeMatcher)]);
@@ -83,13 +83,13 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
                 } elseif (class_exists($handler, true)) {
                     $this->logger->debug("Returning class handler");
 
-                    return new $handler($app->getProtocol(), $client);
+                    return new $handler($this->container->get('protocol'), $client);
                 } elseif (file_exists($handler)) {
                     $this->logger->debug("Returning anonymous class or closure", [
                         'file' => $handler
                     ]);
 
-                    return $this->createContextFromFile($app->getProtocol(), $client, $handler);
+                    return $this->createContextFromFile($this->container->get('protocol'), $client, $handler);
                 } else {
                     throw new \UnexpectedValueException("Error resolving context: $handler");
                 }

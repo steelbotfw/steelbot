@@ -4,7 +4,6 @@ namespace Steelbot;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
 use Steelbot\Context\{ContextInterface, ContextProvider};
 use Steelbot\Exception\ContextNotFoundException;
 use Steelbot\Protocol\IncomingPayloadInterface;
@@ -19,11 +18,6 @@ class ContextRouter implements LoggerAwareInterface
     use LoggerAwareTrait;
 
     /**
-     * @var \Steelbot\Application
-     */
-    protected $app;
-
-    /**
      * @var ContextProvider[]
      */
     protected $contextProviders = [];
@@ -32,14 +26,6 @@ class ContextRouter implements LoggerAwareInterface
      * @var ContextInterface[]
      */
     protected $clientContexts = [];
-
-    /**
-     * @param \Steelbot\Application $app
-     */
-    public function __construct($container)
-    {
-        $this->app = $container->get('kernel');
-    }
 
     /**
      * @param \Steelbot\Context\ContextProvider $contextProvider
@@ -88,7 +74,7 @@ class ContextRouter implements LoggerAwareInterface
         }
 
         if (is_callable($context))  {
-            yield $context($payload, $this->app, $client);
+            yield $context($payload, $client);
             $isResolved = true;
 
         } elseif ($context instanceof ContextInterface) {
@@ -117,7 +103,7 @@ class ContextRouter implements LoggerAwareInterface
         foreach ($this->contextProviders as $contextProvider) {
             $this->logger->debug("Checking provider", ['class' => get_class($contextProvider)]);
 
-            if ($context = $contextProvider->findContext($payload, $client, $this->app)) {
+            if ($context = $contextProvider->findContext($payload, $client)) {
                 return $context;
             }
         }

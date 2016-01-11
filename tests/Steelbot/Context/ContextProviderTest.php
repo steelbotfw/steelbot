@@ -24,6 +24,7 @@ namespace Steelbot\Tests\Context {
     use Steelbot\Protocol\AbstractProtocol;
     use Steelbot\Protocol\Payload\Incoming\TextMessage;
     use Steelbot\Route\PcreRouteMatcher;
+    use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
     /**
@@ -119,14 +120,17 @@ namespace Steelbot\Tests\Context {
             ];
             $contextProvider->setRoute($matcher, $handler, $help);
 
-            $foundHandler = $contextProvider->findContext($payload, $client, $app);
+            $container = $this->getMockBuilder(ContainerInterface::class)
+                ->getMock();
+            $contextProvider->setContainer($container);
+
+            $foundHandler = $contextProvider->findContext($payload, $client, $container);
 
             $this->assertSame($handler, $foundHandler);
         }
 
         public function testFindContextClassFound()
         {
-            $environment = 'test';
             $contextProvider = new ContextProvider();
             $logger = $this->getMock('Psr\Log\LoggerInterface');
             $contextProvider->setLogger($logger);
@@ -138,11 +142,12 @@ namespace Steelbot\Tests\Context {
             $eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
             $protocol = $this->getMockForAbstractClass(AbstractProtocol::class, [$eventDispatcher]);
 
-            $appStub = $this->getMockBuilder(Application::class)
-                ->setConstructorArgs([$environment, true])
+            $container = $this->getMockBuilder(ContainerInterface::class)
                 ->getMock();
-            $appStub->method('getProtocol')
-                ->willReturn($protocol);
+            $container->method('get')
+                ->with('protocol')
+                ->will($this->returnValue($protocol));
+            $contextProvider->setContainer($container);
 
             $matcher = new PcreRouteMatcher('~a~');
 
@@ -152,14 +157,12 @@ namespace Steelbot\Tests\Context {
             ];
             $contextProvider->setRoute($matcher, get_class($handler), $help);
 
-            $foundHandler = $contextProvider->findContext($payload, $client, $appStub);
+            $foundHandler = $contextProvider->findContext($payload, $client);
             $this->assertInstanceOf(AbstractContext::class, $foundHandler);
         }
 
         public function testFindContextFileFound()
         {
-            $environment = 'test';
-
             $handler = function () {
                 return true;
             };
@@ -180,11 +183,12 @@ namespace Steelbot\Tests\Context {
             $eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
             $protocol = $this->getMockForAbstractClass(AbstractProtocol::class, [$eventDispatcher]);
 
-            $appStub = $this->getMockBuilder(Application::class)
-                ->setConstructorArgs([$environment, true])
+            $container = $this->getMockBuilder(ContainerInterface::class)
                 ->getMock();
-            $appStub->method('getProtocol')
-                ->willReturn($protocol);
+            $container->method('get')
+                ->with('protocol')
+                ->will($this->returnValue($protocol));
+            $contextProvider->setContainer($container);
 
             $matcher = new PcreRouteMatcher('~a~');
             $handlerFilename = 'handler.php';
@@ -193,7 +197,7 @@ namespace Steelbot\Tests\Context {
             ];
             $contextProvider->setRoute($matcher, $handlerFilename, $help);
 
-            $foundHandler = $contextProvider->findContext($payload, $client, $appStub);
+            $foundHandler = $contextProvider->findContext($payload, $client);
             $this->assertSame($handler, $foundHandler);
         }
 
@@ -202,7 +206,6 @@ namespace Steelbot\Tests\Context {
             global $mockFileExists;
             $mockFileExists = false;
 
-            $environment = 'test';
             $contextProvider = new ContextProvider();
 
             $logger = $this->getMock('Psr\Log\LoggerInterface');
@@ -212,15 +215,13 @@ namespace Steelbot\Tests\Context {
             $client = $this->getMock('Steelbot\ClientInterface');
             $payload = new TextMessage('a', $client, $client);
 
-            $app = new Application($environment, true);
-
             $matcher = new PcreRouteMatcher('~a~');
             $handler = 'somethingUnexistent';
 
             $contextProvider->setRoute($matcher, $handler);
 
             $this->setExpectedException(\UnexpectedValueException::class);
-            $foundHandler = $contextProvider->findContext($payload, $client, $app);
+            $foundHandler = $contextProvider->findContext($payload, $client);
             $this->assertSame($handler, $foundHandler);
         }
     }
