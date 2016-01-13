@@ -90,7 +90,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      * @param \Steelbot\ClientInterface $client
      * @param OutgoingPayloadInterface|string $payload
      *
-     * @return mixed
+     * @return \Generator
      */
     public function send(ClientInterface $client, OutgoingPayloadInterface $payload, $replyMarkup = null): \Generator
     {
@@ -103,15 +103,20 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
         throw new \DomainException("Unknown payload type");
     }
 
-    public function getApi()
+    /**
+     * @return Api
+     */
+    public function getApi(): Api
     {
         return $this->api;
     }
 
     /**
      * Process updates from server
+     *
+     * @return \Generator
      */
-    protected function processUpdates()
+    protected function processUpdates(): \Generator
     {
         try {
             $updates = yield from $this->api->getUpdates($this->lastUpdateId);

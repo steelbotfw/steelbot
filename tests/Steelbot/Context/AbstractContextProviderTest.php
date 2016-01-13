@@ -31,7 +31,7 @@ namespace Steelbot\Tests\Context {
      * Class ContextProviderTest
      * @package Steelbot\Tests\Context
      */
-    class ContextProviderTest extends \PHPUnit_Framework_TestCase
+    class AbstractContextProviderTest extends \PHPUnit_Framework_TestCase
     {
         public function testSetRouteStringMatcher()
         {
