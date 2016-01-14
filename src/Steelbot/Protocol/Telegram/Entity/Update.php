@@ -14,11 +14,17 @@ class Update
     public $message;
 
     /**
+     * @var InlineQuery
+     */
+    public $inlineQuery;
+
+    /**
      * @param array $data
      */
     public function __construct(array $data)
     {
         $this->updateId = $data['update_id'];
-        $this->message = new Message($data['message']);
+        $this->message = $data['message'] ?? new Message($data['message']);
+        $this->inlineQuery = $data['inline_query'] ?? new InlineQuery($data['inline_query']);
     }
 }
