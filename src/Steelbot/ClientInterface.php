@@ -4,7 +4,6 @@ namespace Steelbot;
 
 /**
  * Interface ClientInterface
- * @package Steelbot
  */
 interface ClientInterface
 {

@@ -9,8 +9,8 @@ class AbstractMessageTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetFrom()
     {
-        $from = $this->getMock('Steelbot\ClientInterface');
-        $user = $this->getMock('Steelbot\ClientInterface');
+        $from = $this->getMock(\Steelbot\ClientInterface::class);
+        $user = $this->getMock(\Steelbot\UserInterface::class);
 
         /** @var AbstractMessage $payload */
         $payload = $this->getMockForAbstractClass(AbstractMessage::class, [$from, $user]);
@@ -21,8 +21,8 @@ class AbstractMessageTest extends \PHPUnit_Framework_TestCase
 
     public function testGetUser()
     {
-        $from = $this->getMock('Steelbot\ClientInterface');
-        $user = $this->getMock('Steelbot\ClientInterface');
+        $from = $this->getMock(\Steelbot\ClientInterface::class);
+        $user = $this->getMock(\Steelbot\UserInterface::class);
 
         /** @var AbstractMessage $payload */
         $payload = $this->getMockForAbstractClass(AbstractMessage::class, [$from, $user]);
@@ -33,11 +33,11 @@ class AbstractMessageTest extends \PHPUnit_Framework_TestCase
 
     public function testIsGroupChatMessage()
     {
-        $from = $this->getMockBuilder('Steelbot\ClientInterface')->getMock();
+        $from = $this->getMock(\Steelbot\GroupChatInterface::class);
         $from->method('getId')->willReturn(-123);
 
-        $user = $this->getMockBuilder('Steelbot\ClientInterface')->getMock();
-        $from->method('getId')->willReturn(42);
+        $user = $this->getMock(\Steelbot\UserInterface::class);
+        $user->method('getId')->willReturn(42);
 
         /** @var AbstractMessage $payload */
         $payload = $this->getMockForAbstractClass(AbstractMessage::class, [$user, $user]);

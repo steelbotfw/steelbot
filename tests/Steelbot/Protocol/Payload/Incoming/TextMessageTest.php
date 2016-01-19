@@ -9,24 +9,24 @@ class TextMessageTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetText()
     {
-        $client = $this->getMock('Steelbot\ClientInterface');
-        $payload = new TextMessage('incoming text', $client, $client);
+        $user = $this->getMock(\Steelbot\UserInterface::class);
+        $payload = new TextMessage('incoming text', $user, $user);
 
         $this->assertEquals('incoming text', $payload->getText());
     }
 
     public function testGetType()
     {
-        $client = $this->getMock('Steelbot\ClientInterface');
-        $payload = new TextMessage('incoming text', $client, $client);
+        $user = $this->getMock(\Steelbot\UserInterface::class);
+        $payload = new TextMessage('incoming text', $user, $user);
 
         $this->assertEquals(IncomingPayloadInterface::TYPE_TEXT, $payload->getType());
     }
 
     public function testToString()
     {
-        $client = $this->getMock('Steelbot\ClientInterface');
-        $payload = new TextMessage('incoming text', $client, $client);
+        $user = $this->getMock(\Steelbot\UserInterface::class);
+        $payload = new TextMessage('incoming text', $user, $user);
 
         $this->assertEquals('incoming text', (string)$payload);
     }

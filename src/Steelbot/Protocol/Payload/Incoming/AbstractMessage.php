@@ -3,6 +3,8 @@
 namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
+use Steelbot\GroupChatInterface;
+use Steelbot\UserInterface;
 
 /**
  * Class AbstractMessage
@@ -16,7 +18,7 @@ abstract class AbstractMessage
     protected $from;
 
     /**
-     * @var ClientInterface
+     * @var UserInterface
      */
     protected $user;
 
@@ -24,7 +26,7 @@ abstract class AbstractMessage
      * @param \Steelbot\ClientInterface $from
      * @param \Steelbot\ClientInterface $user
      */
-    public function __construct(ClientInterface $from, ClientInterface $user)
+    public function __construct(ClientInterface $from, UserInterface $user)
     {
         $this->from = $from;
         $this->user = $user;
@@ -39,19 +41,25 @@ abstract class AbstractMessage
     }
 
     /**
-     * @return \Steelbot\ClientInterface
+     * @return \Steelbot\UserInterface
      */
-    public function getUser(): ClientInterface
+    public function getUser(): UserInterface
     {
         return $this->user;
     }
 
     /**
-     * @return bool
+     * @return bool|null
      */
     public function isGroupChatMessage()
     {
-        return $this->from->getId() !== $this->user->getId();
+        if ($this->from instanceof GroupChatInterface) {
+            return true;
+        } elseif ($this->from instanceof UserInterface) {
+            return false;
+        } else {
+            return null;
+        }
     }
 
     abstract public function __toString(): string;
