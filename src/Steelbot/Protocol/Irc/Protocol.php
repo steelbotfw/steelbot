@@ -18,6 +18,48 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
     private $isConnected = false;
 
     /**
+     * @var string
+     */
+    private $server;
+
+    /**
+     * @var int
+     */
+    private $port = 6667;
+
+    /**
+     * @return string
+     */
+    public function getServer(): string
+    {
+        return $this->server;
+    }
+
+    /**
+     * @param string $server
+     */
+    public function setServer(string $server)
+    {
+        $this->server = $server;
+    }
+
+    /**
+     * @return int
+     */
+    public function getPort(): int
+    {
+        return $this->port;
+    }
+
+    /**
+     * @param int $port
+     */
+    public function setPort($port)
+    {
+        $this->port = $port;
+    }
+
+    /**
      * @return boolean
      */
     public function connect(): \Generator
@@ -42,7 +84,6 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
     {
         $this->eventDispatcher->dispatch(self::EVENT_PRE_DISCONNECT);
         $this->isConnected = false;
-        unset($this->api);
         $this->eventDispatcher->dispatch(self::EVENT_POST_DISCONNECT);
 
         return true;
