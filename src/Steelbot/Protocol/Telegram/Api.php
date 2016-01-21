@@ -270,22 +270,11 @@ class Api
      */
     public function sendChatAction(int $chatId, string $action): \Generator
     {
-        $actions = [
-            static::ACTION_TYPING,       // for text messages,
-            static::ACTION_UPLOAD_PHOTO, // for photos,
-            static::ACTION_RECORD_VIDEO,
-            static::ACTION_UPLOAD_VIDEO,
-            static::ACTION_RECORD_AUDIO,
-            static::ACTION_UPLOAD_AUDIO,
-            static::ACTION_UPLOAD_DOCUMENT,
-            static::ACTION_FIND_LOCATION
-        ];
-
-        $response = yield $this->post('/sendChatAction', [
+        $response = yield from $this->post('/sendChatAction', [
             'chat_id' => $chatId,
             'action' => $action
         ]);
-        $body = yield $this->getResponseBody($response);
+        $body = yield from $this->getResponseBody($response);
         $body = json_decode($body, true);
 
         yield true;
