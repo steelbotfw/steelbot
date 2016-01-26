@@ -38,7 +38,7 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
      * @param RouteMatcherInterface|string $regexp
      * @param string|callable $handler
      */
-    public function setRoute($matcher, $handler, array $help = []): self
+    public function setRoute($matcher, $handler): self
     {
         if (is_string($matcher)) {
             $matcher = new PcreRouteMatcher($matcher);
@@ -48,7 +48,6 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
             throw new \DomainException("Matcher must implement RouteMatcherInterface or be a string");
         }
 
-        $matcher->setHelp($help);
         $this->routes[] = [$matcher, $handler];
         ksort($this->routes);
 
