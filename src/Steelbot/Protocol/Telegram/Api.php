@@ -321,7 +321,10 @@ class Api
             }
 
         } else {
-            $this->logger->error("Response http error: ".$response->getStatusCode());
+            $this->logger->error('Http response error', [
+                'code' => $response->getStatusCode(),
+                'message' => $response->getReasonPhrase()
+            ]);
         }
 
         return $updates;

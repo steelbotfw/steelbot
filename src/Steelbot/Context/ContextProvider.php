@@ -14,6 +14,7 @@ use Steelbot\Route\PcreRouteMatcher;
 use Steelbot\Route\RouteMatcherInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ContextProvider
@@ -33,6 +34,16 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
      * @var array
      */
     protected $routes = [];
+
+    /**
+     * ContextProvider constructor.
+     *
+     * @param ContainerInterface $container
+     */
+    public function __construct(ContainerInterface $container)
+    {
+        $this->setContainer($container);
+    }
 
     /**
      * @param RouteMatcherInterface|string $regexp
