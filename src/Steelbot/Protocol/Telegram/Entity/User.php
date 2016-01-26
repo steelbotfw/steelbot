@@ -1,13 +1,13 @@
 <?php
 
 namespace Steelbot\Protocol\Telegram\Entity;
-use Steelbot\ClientInterface;
+use Steelbot\UserInterface;
 
 /**
  * Class User
  * @package Telegram\Entity
  */
-class User implements ClientInterface
+class User implements UserInterface
 {
     public $id;
     public $firstName;

@@ -25,6 +25,9 @@ abstract class AbstractRouteMatcher implements RouteMatcherInterface
      */
     protected $priority = 0;
 
+    /**
+     * @var array
+     */
     protected $help = [];
 
     /**
