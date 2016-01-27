@@ -14,7 +14,7 @@ class TextMessage implements OutgoingPayloadInterface
     /**
      * @var string
      */
-    private $text;
+    protected $text;
 
     /**
      * Text constructor.

@@ -3,13 +3,12 @@
 namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
-use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\LocationMessageInterface;
 
 /**
  * Class LocationMessage
  */
-class LocationMessage extends AbstractMessage implements LocationMessageInterface, IncomingPayloadInterface
+class LocationMessage extends AbstractMessage implements LocationMessageInterface
 {
     /**
      * @var float

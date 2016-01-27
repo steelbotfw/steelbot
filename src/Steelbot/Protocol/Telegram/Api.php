@@ -119,7 +119,7 @@ class Api
      */
     public function sendMessage(int    $chatId,
                                 string $text,
-                                string $parseMode,
+                                string $parseMode = null,
                                 bool   $disableWebPagePreview = false,
                                 int    $replyToMessageId = null,
                                 string $replyMarkup = null): \Generator

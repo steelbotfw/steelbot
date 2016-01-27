@@ -3,12 +3,12 @@
 namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
-use Steelbot\Protocol\IncomingPayloadInterface;
+use Steelbot\Protocol\TextMessageInterface;
 
 /**
  * Class TextMessage
  */
-class TextMessage extends AbstractMessage implements IncomingPayloadInterface
+class TextMessage extends AbstractMessage implements TextMessageInterface
 {
     /**
      * @var string

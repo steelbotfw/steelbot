@@ -4,13 +4,14 @@ namespace Steelbot\Protocol\Payload\Incoming;
 
 use Steelbot\ClientInterface;
 use Steelbot\GroupChatInterface;
+use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\UserInterface;
 
 /**
  * Class AbstractMessage
  *
  */
-abstract class AbstractMessage
+abstract class AbstractMessage implements IncomingPayloadInterface
 {
     /**
      * @var ClientInterface

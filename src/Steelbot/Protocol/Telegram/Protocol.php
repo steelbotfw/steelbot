@@ -4,10 +4,16 @@ namespace Steelbot\Protocol\Telegram;
 
 use Icicle\Coroutine;
 use Steelbot\ClientInterface;
-use Steelbot\Protocol\Event\IncomingPayloadEvent;
-use Steelbot\Protocol\OutgoingPayloadInterface;
-use Steelbot\Protocol\Payload\Outgoing\ImageMessage;
-use Steelbot\Protocol\Payload\Outgoing\TextMessage;
+use Steelbot\Protocol\{
+    Event\IncomingPayloadEvent,
+    IncomingPayloadInterface,
+    OutgoingPayloadInterface,
+    Payload\Outgoing\TextMessage,
+    Telegram\Entity\Update,
+    Telegram\Payload\Incoming\InlineQuery,
+    Telegram\Payload\Outgoing\TextMessage as TelegramTextMessage,
+    Payload\Incoming as IncomingPayload
+};
 
 /**
  * Class Protocol
@@ -92,13 +98,26 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      *
      * @return \Generator
      */
-    public function send(ClientInterface $client, OutgoingPayloadInterface $payload, $replyMarkup = null): \Generator
+    public function send(ClientInterface $client, OutgoingPayloadInterface $payload): \Generator
     {
+        // convert standard text message to telegram text message
         if ($payload instanceof TextMessage) {
-            return $this->api->sendMessage($client->getId(), $payload->getText(), 'Markdown', false, null, $replyMarkup);
-        } elseif ($payload instanceof ImageMessage) {
-            return $this->api->sendPhoto($client->getId(), $payload->getResource(), null, null, null);
+            $payload = new TelegramTextMessage($payload->getText());
         }
+
+        if ($payload instanceof TelegramTextMessage) {
+            /** @var TelegramTextMessage $payload */
+            return $this->api->sendMessage(
+                $client->getId(),
+                $payload->getText(),
+                $payload->getParseMode(),
+                $payload->getDisableWebPagePreview(),
+                $payload->getReplyToMessageId(),
+                $payload->getReplyMarkup()
+            );
+        } /* elseif ($payload instanceof ImageMessage) {
+            return $this->api->sendPhoto($client->getId(), $payload->getResource(), null, null, null);
+        } */
 
         throw new \DomainException("Unknown payload type");
     }
@@ -122,12 +141,10 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
             $updates = yield from $this->api->getUpdates($this->lastUpdateId);
 
             foreach ($updates as $update) {
-                $incomingPayload = new IncomingPayload($update);
+                $payload = $this->createPayload($update);
 
                 try {
-                    $message = $incomingPayload->getMessage();
-
-                    $this->eventDispatcher->dispatch(IncomingPayloadEvent::NAME, new IncomingPayloadEvent($message));
+                    $this->eventDispatcher->dispatch(IncomingPayloadEvent::NAME, new IncomingPayloadEvent($payload));
                 } catch (\DomainException $e) {
                     $this->logger->error($e->getMessage());
                 }
@@ -139,5 +156,27 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
         }// @todo catch NotOk exception
 
         return  true;
+    }
+
+    /**
+     * @param Update $update
+     *
+     * @return IncomingPayloadInterface
+     */
+    protected function createPayload(Update $update): IncomingPayloadInterface
+    {
+        if ($update->message !== null) {
+            $m = $update->message;
+            if (!empty($m->text)) {
+                return new IncomingPayload\TextMessage($m->text, $m->chat, $m->from);
+            } elseif (!empty($m->location)) {
+                return new IncomingPayload\LocationMessage($m->location->longitude, $m->location->latitude, $m->chat, $m->from);
+            }
+        } elseif ($update->inlineQuery !== null) {
+            $iQ = $update->inlineQuery;
+            return new InlineQuery($iQ->from, $iQ->id, $iQ->query, $iQ->from);
+        }
+
+        $this->logger->warning("Unknown payload", ['update'=>$update]);
     }
 }

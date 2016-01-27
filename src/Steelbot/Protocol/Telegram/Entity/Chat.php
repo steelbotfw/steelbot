@@ -1,11 +1,12 @@
 <?php
 
 namespace Steelbot\Protocol\Telegram\Entity;
+use Steelbot\ClientInterface;
 
 /**
  * Telegram Chat entity
  */
-class Chat
+class Chat implements ClientInterface
 {
     const TYPE_PRIVATE = 'private';
     const TYPE_GROUP = 'group';
@@ -53,5 +54,21 @@ class Chat
         $this->username = $data['username'] ?? null;
         $this->firstName = $data['first_name'] ?? null;
         $this->lastName = $data['last_name'] ?? null;
+    }
+
+    /**
+     * @return int
+     */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return (string)$this->id;
     }
 }

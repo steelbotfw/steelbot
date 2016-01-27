@@ -10,6 +10,7 @@ use Steelbot\Context\ContextProviderCompilerPass;
 use Steelbot\Event\AfterBootEvent;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
+use Steelbot\Protocol\Payload\Incoming\AbstractMessage;
 use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -43,34 +44,36 @@ class Application extends Kernel
         $eventCallback = function (IncomingPayloadEvent $event) {
             $payload = $event->getPayload();
 
-            $this->getLogger()->info("Received payload.", [
-                'from' => $payload->getFrom()->getId(),
-                'content' => (string)$payload
-            ]);
-
-            $callback = function ($payload): \Generator
-            {
-                try {
-                    yield from $this->getContextRouter()->handle($payload);
-                } catch (ContextNotFoundException $e) {
-                    $this->getLogger()->debug("Handle not found");
-
-                    if (!$payload->isGroupChatMessage()) {
-                        yield from $this->getProtocol()->send($payload->getFrom(), new TextMessage("Command not found"));
-                    }
-                }
-            };
-
-            $coroutine = Coroutine\create($callback, $payload);
-            $coroutine->done(null, function(\Throwable $e) {
-                $this->getLogger()->error("Throwable catched", [
-                    'message' => $e->getMessage(),
-                    'code' => $e->getCode(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString()
+            if ($payload instanceof AbstractMessage) {
+                $this->getLogger()->info("Received message payload.", [
+                    'from'    => $payload->getFrom()->getId(),
+                    'content' => (string)$payload
                 ]);
-            });
+
+                $callback = function ($payload): \Generator 
+                {
+                    try {
+                        yield from $this->getContextRouter()->handle($payload);
+                    } catch (ContextNotFoundException $e) {
+                        $this->getLogger()->debug("Handle not found");
+
+                        if (!$payload->isGroupChatMessage()) {
+                            yield from $this->getProtocol()->send($payload->getFrom(), new TextMessage("Command not found"));
+                        }
+                    }
+                };
+
+                $coroutine = Coroutine\create($callback, $payload);
+                $coroutine->done(null, function (\Throwable $e) {
+                    $this->getLogger()->error("Throwable catched", [
+                        'message' => $e->getMessage(),
+                        'code'    => $e->getCode(),
+                        'file'    => $e->getFile(),
+                        'line'    => $e->getLine(),
+                        'trace'   => $e->getTraceAsString()
+                    ]);
+                });
+            }
         };
 
         $this->getEventDispatcher()->addListener(IncomingPayloadEvent::NAME, $eventCallback);
