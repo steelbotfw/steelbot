@@ -38,12 +38,4 @@ class TextMessage extends AbstractMessage implements TextMessageInterface
     {
         return $this->text;
     }
-
-    /**
-     * @return string
-     */
-    public function getType(): string
-    {
-        return self::TYPE_TEXT;
-    }
 }

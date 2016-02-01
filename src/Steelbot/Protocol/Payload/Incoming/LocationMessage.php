@@ -54,14 +54,4 @@ class LocationMessage extends AbstractMessage implements LocationMessageInterfac
     {
         return "lon:{$this->longitude}, lat:{$this->latitude}";
     }
-
-    /**
-     * Payload type.
-     *
-     * @return string
-     */
-    public function getType(): string
-    {
-        return static::TYPE_LOCATION;
-    }
 }
