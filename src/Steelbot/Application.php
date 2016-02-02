@@ -8,6 +8,7 @@ use Icicle\Coroutine;
 use Icicle\Loop;
 use Steelbot\Context\ContextProviderCompilerPass;
 use Steelbot\Event\AfterBootEvent;
+use Steelbot\Event\BeforeStopEvent;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
 use Steelbot\Protocol\Payload\Incoming\AbstractMessage;
@@ -122,18 +123,7 @@ class Application extends Kernel
         $this->boot();
         $this->getEventDispatcher()->dispatch(AfterBootEvent::NAME);
 
-        $coroutine = Coroutine\create(function() {
-            yield from $this->getProtocol()->connect();
-        });
-        $coroutine->done(null, function(\Throwable $e) {
-            $this->getLogger()->error("Throwable catched", [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
-        });
+        $this->spawnProtocolCoroutine();
 
         $this->registerPayloadHandler();
 
@@ -146,6 +136,7 @@ class Application extends Kernel
     public function stop()
     {
         if (Loop\isRunning()) {
+            $this->getEventDispatcher()->dispatch(BeforeStopEvent::NAME, new BeforeStopEvent());
             Loop\stop();
         }
     }
@@ -194,5 +185,47 @@ class Application extends Kernel
         $container->addCompilerPass(new RegisterListenersPass(), PassConfig::TYPE_BEFORE_REMOVING);
 
         return $container;
+    }
+
+    protected function spawnProtocolCoroutine()
+    {
+        $coroutine = Coroutine\create(function() {
+            $attempts = 5;
+            do {
+                try {
+                    yield from $this->getProtocol()->connect();
+                    $attempts = 5;
+                    while ($this->getProtocol()->isConnected()) {
+                        yield from $this->getProtocol()->processUpdates();
+                    }
+                } catch (\Throwable $e) {
+                    $this->getLogger()->critical("Protocol error", [
+                        'message' => $e->getMessage(),
+                        'code' => $e->getCode(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            } while ($attempts-- > 0);
+
+            return true;
+        });
+
+        $onFullfilled = function() {
+            $this->getLogger()->info("Protocol coroutine has been fulfilled");
+            $this->stop();
+        };
+        $onRejected = function(\Throwable $e) {
+            $this->getLogger()->critical("Protocol coroutine has been rejected", [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $this->stop();
+        };
+        $coroutine->then($onFullfilled, $onRejected);
     }
 }

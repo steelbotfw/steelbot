@@ -41,6 +41,11 @@ abstract class AbstractProtocol implements LoggerAwareInterface
     abstract public function connect();
 
     /**
+     * @return mixed
+     */
+    abstract public function processUpdates();
+
+    /**
      * @return boolean
      */
     abstract public function disconnect();

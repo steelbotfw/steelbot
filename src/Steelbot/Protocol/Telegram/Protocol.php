@@ -64,10 +64,6 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
         $this->logger->info("Connected to server");
         $this->eventDispatcher->dispatch(self::EVENT_POST_CONNECT);
 
-        while ($this->isConnected) {
-            yield $this->processUpdates();
-        }
-
         return true;
     }
 
@@ -135,7 +131,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      *
      * @return \Generator
      */
-    protected function processUpdates(): \Generator
+    public function processUpdates(): \Generator
     {
         try {
             $updates = yield from $this->api->getUpdates($this->lastUpdateId);
