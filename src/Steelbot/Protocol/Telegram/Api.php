@@ -381,8 +381,7 @@ class Api
      */
     protected function request(string $method, $uri, array $headers = [], $body = null, array $options = []): \Generator
     {
-        $socket = (yield \Icicle\Dns\connect($this->host, $this->port));
-        return (yield $this->httpClient->request($socket, $method, $uri, $headers, $body, $options));
+        return (yield $this->httpClient->request($method, $uri, $headers, $body, $options));
     }
 
     /**
