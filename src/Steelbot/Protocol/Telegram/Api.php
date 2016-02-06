@@ -381,7 +381,7 @@ class Api
      */
     protected function request(string $method, $uri, array $headers = [], $body = null, array $options = []): \Generator
     {
-        return (yield $this->httpClient->request($method, $uri, $headers, $body, $options));
+        return $this->httpClient->request($method, $uri, $headers, $body, $options);
     }
 
     /**
