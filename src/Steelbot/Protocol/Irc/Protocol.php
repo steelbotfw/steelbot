@@ -68,7 +68,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
 
         $this->isConnected = true;
         $this->logger->info("Connected to server");
-        $this->eventDispatcher->dispatch(self::EVENT_POST_CONNECT);
+        $this->eventDispatcher->dispatch(static::EVENT_AFTER_CONNECT);
 
         while ($this->isConnected) {
             yield $this->processUpdates();
@@ -82,9 +82,9 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      */
     public function disconnect()
     {
-        $this->eventDispatcher->dispatch(self::EVENT_PRE_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_BEFORE_DISCONNECT);
         $this->isConnected = false;
-        $this->eventDispatcher->dispatch(self::EVENT_POST_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_AFTER_DISCONNECT);
 
         return true;
     }

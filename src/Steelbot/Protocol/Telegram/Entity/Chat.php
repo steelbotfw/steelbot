@@ -2,11 +2,12 @@
 
 namespace Steelbot\Protocol\Telegram\Entity;
 use Steelbot\ClientInterface;
+use Steelbot\GroupChatInterface;
 
 /**
  * Telegram Chat entity
  */
-class Chat implements ClientInterface
+class Chat implements GroupChatInterface
 {
     const TYPE_PRIVATE = 'private';
     const TYPE_GROUP = 'group';
@@ -62,6 +63,11 @@ class Chat implements ClientInterface
     public function getId(): int
     {
         return $this->id;
+    }
+
+    public function getParticipants()
+    {
+        return false;
     }
 
     /**

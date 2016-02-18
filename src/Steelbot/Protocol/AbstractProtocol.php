@@ -15,10 +15,10 @@ abstract class AbstractProtocol implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
-    const EVENT_PRE_CONNECT        = 'protocol.preConnect';
-    const EVENT_POST_CONNECT       = 'protocol.postConnect';
-    const EVENT_PRE_DISCONNECT     = 'protocol.preDisconnect';
-    const EVENT_POST_DISCONNECT    = 'protocol.postDisconnect';
+    const EVENT_BEFORE_CONNECT        = 'protocol.connect.before';
+    const EVENT_AFTER_CONNECT       = 'protocol.connect.after';
+    const EVENT_BEFORE_DISCONNECT     = 'protocol.disconnect.before';
+    const EVENT_AFTER_DISCONNECT    = 'protocol.disconnect.after';
     const EVENT_MESSAGE_PRE_SEND   = 'protocol.message.preSend';
     const EVENT_MESSAGE_POST_SEND  = 'protocol.message.postSend';
 

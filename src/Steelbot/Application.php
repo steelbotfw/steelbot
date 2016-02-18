@@ -11,6 +11,7 @@ use Steelbot\Event\AfterBootEvent;
 use Steelbot\Event\BeforeStopEvent;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
+use Steelbot\Protocol\Exception\UnknownPayloadException;
 use Steelbot\Protocol\Payload\Incoming\AbstractMessage;
 use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 use Symfony\Component\Config\Loader\LoaderInterface;
@@ -198,6 +199,10 @@ class Application extends Kernel
                     while ($this->getProtocol()->isConnected()) {
                         yield from $this->getProtocol()->processUpdates();
                     }
+                } catch (UnknownPayloadException $e) {
+                    print_r($e->getPayload());
+
+                    throw $e;
                 } catch (\Throwable $e) {
                     $this->getLogger()->critical("Protocol error", [
                         'message' => $e->getMessage(),

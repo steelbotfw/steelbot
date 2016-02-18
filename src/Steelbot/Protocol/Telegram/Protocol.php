@@ -12,7 +12,10 @@ use Steelbot\Protocol\{
     Telegram\Entity\Update,
     Telegram\Payload\Incoming\InlineQuery,
     Telegram\Payload\Outgoing\TextMessage as TelegramTextMessage,
-    Payload\Incoming as IncomingPayload
+    Payload\Incoming as IncomingPayload,
+    Event\AfterConnectEvent,
+    Event\BeforeDisconnectEvent,
+    Exception\UnknownPayloadException
 };
 
 /**
@@ -62,7 +65,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
 
         $this->isConnected = true;
         $this->logger->info("Connected to server");
-        $this->eventDispatcher->dispatch(self::EVENT_POST_CONNECT);
+        $this->eventDispatcher->dispatch(AfterConnectEvent::NAME, new AfterConnectEvent($this));
 
         return true;
     }
@@ -72,10 +75,10 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
      */
     public function disconnect()
     {
-        $this->eventDispatcher->dispatch(self::EVENT_PRE_DISCONNECT);
+        $this->eventDispatcher->dispatch(BeforeDisconnectEvent::NAME, new BeforeDisconnectEvent($this));
         $this->isConnected = false;
         unset($this->api);
-        $this->eventDispatcher->dispatch(self::EVENT_POST_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_AFTER_DISCONNECT);
 
         return true;
     }
@@ -167,12 +170,16 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
                 return new IncomingPayload\TextMessage($m->text, $m->chat, $m->from);
             } elseif (!empty($m->location)) {
                 return new IncomingPayload\LocationMessage($m->location->longitude, $m->location->latitude, $m->chat, $m->from);
+            } elseif (!empty($m->newChatParticipant)) {
+                return new IncomingPayload\GroupChatNewParticipant($m->chat, $m->newChatParticipant);
+            } else {
+                throw new UnknownPayloadException($update, "Unknown message payload received");
             }
         } elseif ($update->inlineQuery !== null) {
             $iQ = $update->inlineQuery;
             return new InlineQuery($iQ->from, $iQ->id, $iQ->query, $iQ->from);
         }
 
-        $this->logger->warning("Unknown payload", ['update'=>$update]);
+        throw new UnknownPayloadException($update, "Empty message body");
     }
 }

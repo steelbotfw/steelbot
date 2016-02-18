@@ -108,16 +108,16 @@ class Api
      *
      * @coroutine
      *
-     * @param int $chatId
-     * @param string $text
-     * @param bool $disableWebPagePreview
-     * @param int null $replyToMessageId
-     * @param null $replyMarkup
+     * @param int|string  $chatId
+     * @param string      $text
+     * @param bool        $disableWebPagePreview
+     * @param int|null    $replyToMessageId
+     * @param string|null $replyMarkup
      *
      * @return \Generator
      * @resolve Entity\Message
      */
-    public function sendMessage(int    $chatId,
+    public function sendMessage(       $chatId,
                                 string $text,
                                 string $parseMode = null,
                                 bool   $disableWebPagePreview = false,

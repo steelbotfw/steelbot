@@ -35,7 +35,7 @@ class Protocol extends AbstractProtocol
             $this->stdin = new Stream\ReadableStream(STDIN);
         }
 
-        $this->eventDispatcher->dispatch(self::EVENT_POST_CONNECT);
+        $this->eventDispatcher->dispatch(static::EVENT_AFTER_CONNECT);
 
         while ($this->isConnected()) {
             $this->prompt();
@@ -51,9 +51,9 @@ class Protocol extends AbstractProtocol
      */
     public function disconnect()
     {
-        $this->eventDispatcher->dispatch(self::EVENT_PRE_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_BEFORE_DISCONNECT);
         unset($this->client);
-        $this->eventDispatcher->dispatch(self::EVENT_POST_DISCONNECT);
+        $this->eventDispatcher->dispatch(self::EVENT_AFTER_DISCONNECT);
 
         return true;
     }

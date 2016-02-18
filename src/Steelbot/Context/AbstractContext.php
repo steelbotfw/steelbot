@@ -43,7 +43,7 @@ abstract class AbstractContext implements ContextInterface
      *
      * @param IncomingPayloadInterface $payload
      */
-    abstract public function handle(IncomingPayloadInterface $payload);
+    abstract public function handle($payload);
 
     /**
      * @return bool
