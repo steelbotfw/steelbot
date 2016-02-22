@@ -3,6 +3,7 @@
 namespace Steelbot\Protocol\Telegram;
 
 use Icicle\Http\Client\Client;
+use Icicle\Http\Message\BasicUri;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Stream\MemoryStream;
@@ -393,10 +394,12 @@ class Api
      */
     protected function buildUrl(string $pathName, array $params = []): string
     {
-        $nonEmptyParams = array_filter($params, function ($value) { return $value !== null; });
-        $paramStr = count($nonEmptyParams) ? '?'.http_build_query($nonEmptyParams) : null;
+        $uri = new BasicUri($this->baseUrl.$this->token.$pathName);
+        foreach ($params as $name => $value) {
+            $uri = $uri->withQueryValue($name, $value);
+        }
 
-        return $this->baseUrl.$this->token.$pathName.$paramStr;
+        return (string)$uri;
     }
 
     /**
