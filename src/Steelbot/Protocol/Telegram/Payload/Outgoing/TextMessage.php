@@ -23,6 +23,11 @@ class TextMessage extends \Steelbot\Protocol\Payload\Outgoing\TextMessage
     protected $disableWebPagePreview = false;
 
     /**
+     * @var bool
+     */
+    protected $disableNotification = false;
+
+    /**
      * @todo
      *
      * @var
@@ -66,6 +71,22 @@ class TextMessage extends \Steelbot\Protocol\Payload\Outgoing\TextMessage
     public function setDisableWebPagePreview(bool $disableWebPagePreview)
     {
         $this->disableWebPagePreview = $disableWebPagePreview;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isDisableNotification(): bool
+    {
+        return $this->disableNotification;
+    }
+
+    /**
+     * @param boolean $disableNotification
+     */
+    public function setDisableNotification(bool $disableNotification = false)
+    {
+        $this->disableNotification = $disableNotification;
     }
 
     /**

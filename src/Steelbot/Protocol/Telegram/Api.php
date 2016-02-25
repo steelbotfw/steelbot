@@ -122,6 +122,7 @@ class Api
                                 string $text,
                                 string $parseMode = null,
                                 bool   $disableWebPagePreview = false,
+                                bool   $disableNotification = false,
                                 int    $replyToMessageId = null,
                                 string $replyMarkup = null): \Generator
     {
@@ -142,6 +143,9 @@ class Api
         }
         if ($replyMarkup) {
             $params['reply_markup'] = $replyMarkup;
+        }
+        if ($disableNotification) {
+            $params['disable_notification'] = $disableNotification;
         }
 
         $response = yield from $this->post('/sendMessage', $params);

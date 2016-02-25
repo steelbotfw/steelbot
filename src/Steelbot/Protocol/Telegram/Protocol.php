@@ -111,6 +111,7 @@ class Protocol extends \Steelbot\Protocol\AbstractProtocol
                 $payload->getText(),
                 $payload->getParseMode(),
                 $payload->getDisableWebPagePreview(),
+                $payload->getDisableNotification(),
                 $payload->getReplyToMessageId(),
                 $payload->getReplyMarkup()
             );
