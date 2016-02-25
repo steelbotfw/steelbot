@@ -76,7 +76,7 @@ class TextMessage extends \Steelbot\Protocol\Payload\Outgoing\TextMessage
     /**
      * @return boolean
      */
-    public function isDisableNotification(): bool
+    public function getDisableNotification(): bool
     {
         return $this->disableNotification;
     }
