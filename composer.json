@@ -17,10 +17,10 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.0",
+	
+	"steelbotfw/telegram-bot-api": "dev-master",
 
         "icicleio/icicle": "dev-master",
-        "icicleio/http": "*",
-        "icicleio/dns": "*",
 
         "symfony/http-kernel": "dev-master",
         "symfony/dependency-injection": "dev-master",
