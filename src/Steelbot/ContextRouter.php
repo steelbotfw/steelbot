@@ -6,7 +6,9 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Steelbot\Context\{ContextInterface, ContextProvider};
 use Steelbot\Exception\ContextNotFoundException;
+use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\IncomingPayloadInterface;
+use Steelbot\Protocol\Payload\Incoming\AbstractMessage;
 
 /**
  * Class ContextRouter
@@ -48,13 +50,13 @@ class ContextRouter implements LoggerAwareInterface
     }
 
     /**
-     * @param IncomingPayloadInterface $payload
+     * @param AbstractMessage $message
      *
      * @return \Generator
      */
-    public function handle(IncomingPayloadInterface $payload): \Generator
+    public function handle(AbstractMessage $message, AbstractProtocol $protocol): \Generator
     {
-        $client = $payload->getFrom();
+        $client = $message->getFrom();
         $clientId = $client->getId();
 
         $this->logger->debug("New payload", ['clientId' => $clientId]);
@@ -62,7 +64,10 @@ class ContextRouter implements LoggerAwareInterface
         if (isset($this->clientContexts[$clientId])) {
             $context = $this->clientContexts[$clientId];
         } else {
-            $context = $this->findContext($payload, $client);
+            $context = $this->findContext($message);
+            $context->setClient($client);
+            $context->setProtocol($protocol);
+
             if ($context instanceof LoggerAwareInterface) {
                 $context->setLogger($this->logger);
             }
@@ -74,18 +79,16 @@ class ContextRouter implements LoggerAwareInterface
         }
 
         if (is_callable($context))  {
-            yield $context($payload, $client);
+            yield $context($message, $client);
             $isResolved = true;
 
         } elseif ($context instanceof ContextInterface) {
-            yield $context->handle($payload);
+            yield $context->handle($message);
             $isResolved = $context->isResolved();
         }
 
         if ($isResolved) {
-            $this->logger->debug("Destroying context", ['clientId' => $clientId]);
-            unset($context);
-            unset($this->clientContexts[$clientId]);
+            $this->terminateContext($clientId);
         }
 
         return true;
@@ -98,16 +101,28 @@ class ContextRouter implements LoggerAwareInterface
      * @return \Steelbot\Context\ContextInterface
      * @throws \Steelbot\Exception\ContextNotFoundException
      */
-    protected function findContext(IncomingPayloadInterface $payload, ClientInterface $client)
+    protected function findContext(IncomingPayloadInterface $payload)
     {
         foreach ($this->contextProviders as $contextProvider) {
             $this->logger->debug("Checking provider", ['class' => get_class($contextProvider)]);
 
-            if ($context = $contextProvider->findContext($payload, $client)) {
+            if ($context = $contextProvider->findContext($payload)) {
                 return $context;
             }
         }
 
         throw new ContextNotFoundException;
+    }
+
+    /**
+     * @param $clientId
+     */
+    protected function terminateContext($clientId)
+    {
+        if (!isset($this->clientContexts[$clientId])) {
+            throw new \UnexpectedValueException("There is no context for client");
+        }
+        $this->logger->debug("Destroying context", ['clientId' => $clientId]);
+        unset($this->clientContexts[$clientId]);
     }
 }

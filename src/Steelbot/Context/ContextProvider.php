@@ -5,25 +5,19 @@ namespace Steelbot\Context;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
-use Steelbot\Application;
 use Steelbot\ClientInterface;
-use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Route\CallableRouteMatcher;
 use Steelbot\Route\PcreRouteMatcher;
 use Steelbot\Route\RouteMatcherInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ContextProvider
  * @package Steelbot\Context
  */
-class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
+class ContextProvider implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
-    use ContainerAwareTrait;
 
     /**
      * @var LoggerInterface
@@ -34,16 +28,6 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
      * @var array
      */
     protected $routes = [];
-
-    /**
-     * ContextProvider constructor.
-     *
-     * @param ContainerInterface $container
-     */
-    public function __construct(ContainerInterface $container)
-    {
-        $this->setContainer($container);
-    }
 
     /**
      * @param RouteMatcherInterface|string $regexp
@@ -80,7 +64,7 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
      * @return \Steelbot\Context\ContextInterface|false
      * @throws \Steelbot\Exception\ContextNotFoundException
      */
-    public function findContext(IncomingPayloadInterface $payload, ClientInterface $client)
+    public function findContext(IncomingPayloadInterface $payload)
     {
         foreach ($this->routes as list($routeMatcher, $handler)) {
             $this->logger->debug("Checking route", ['class' => get_class($routeMatcher)]);
@@ -93,13 +77,13 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
                 } elseif (class_exists($handler, true)) {
                     $this->logger->debug("Returning class handler");
 
-                    return new $handler($this->container->get('protocol'), $client);
+                    return new $handler;
                 } elseif (file_exists($handler)) {
                     $this->logger->debug("Returning anonymous class or closure", [
                         'file' => $handler
                     ]);
 
-                    return $this->createContextFromFile($this->container->get('protocol'), $client, $handler);
+                    return require $handler;
                 } else {
                     throw new \UnexpectedValueException("Error resolving context: $handler");
                 }
@@ -107,17 +91,5 @@ class ContextProvider implements LoggerAwareInterface, ContainerAwareInterface
         }
 
         return false;
-    }
-
-    /**
-     * @param \Steelbot\Application $app
-     * @param \Steelbot\ClientInterface $client
-     * @param string $filename
-     *
-     * @return \Steelbot\Context\ContextInterface|\Closure
-     */
-    protected function createContextFromFile(AbstractProtocol $protocol, ClientInterface $client, $filename)
-    {
-        return include $filename;
     }
 }

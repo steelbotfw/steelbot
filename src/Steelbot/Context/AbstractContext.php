@@ -6,6 +6,7 @@ use Steelbot\ClientInterface;
 use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\Payload\Outgoing\TextMessage;
+use Symfony\Component\DependencyInjection\Exception\LogicException;
 
 /**
  * Class AbstractContext
@@ -27,16 +28,6 @@ abstract class AbstractContext implements ContextInterface
      * @var bool
      */
     protected $isResolved = false;
-
-    /**
-     * @param \Steelbot\Protocol\AbstractProtocol $protocol
-     * @param \Steelbot\ClientInterface $client
-     */
-    public function __construct(AbstractProtocol $protocol, ClientInterface $client)
-    {
-        $this->protocol = $protocol;
-        $this->client = $client;
-    }
 
     /**
      * Handle incoming payload
@@ -74,5 +65,43 @@ abstract class AbstractContext implements ContextInterface
         $textMessage = new TextMessage($text);
 
         return $this->protocol->send($this->client, $textMessage);
+    }
+
+    /**
+     * @return ClientInterface
+     */
+    public function getClient()
+    {
+        return $this->client;
+    }
+
+    /**
+     * @param ClientInterface $client
+     */
+    public function setClient(ClientInterface $client)
+    {
+        if (!$this->client) {
+            $this->client = $client;
+        } else {
+            throw new LogicException("Client already has been setted");
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return AbstractProtocol
+     */
+    public function getProtocol()
+    {
+        return $this->protocol;
+    }
+
+    /**
+     * @param AbstractProtocol $protocol
+     */
+    public function setProtocol($protocol)
+    {
+        $this->protocol = $protocol;
     }
 }
