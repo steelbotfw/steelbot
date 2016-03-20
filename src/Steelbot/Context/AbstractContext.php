@@ -45,6 +45,44 @@ abstract class AbstractContext implements ContextInterface
     }
 
     /**
+     * @return ClientInterface
+     */
+    public function getClient(): ClientInterface
+    {
+        return $this->client;
+    }
+
+    /**
+     * @param ClientInterface $client
+     */
+    public function setClient(ClientInterface $client)
+    {
+        if (!$this->client) {
+            $this->client = $client;
+        } else {
+            throw new LogicException("Client already has been setted");
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return AbstractProtocol
+     */
+    public function getProtocol(): AbstractProtocol
+    {
+        return $this->protocol;
+    }
+
+    /**
+     * @param AbstractProtocol $protocol
+     */
+    public function setProtocol(AbstractProtocol $protocol)
+    {
+        $this->protocol = $protocol;
+    }
+
+    /**
      * Resolve current context
      */
     protected function resolve()
@@ -67,41 +105,4 @@ abstract class AbstractContext implements ContextInterface
         return $this->protocol->send($this->client, $textMessage);
     }
 
-    /**
-     * @return ClientInterface
-     */
-    public function getClient()
-    {
-        return $this->client;
-    }
-
-    /**
-     * @param ClientInterface $client
-     */
-    public function setClient(ClientInterface $client)
-    {
-        if (!$this->client) {
-            $this->client = $client;
-        } else {
-            throw new LogicException("Client already has been setted");
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return AbstractProtocol
-     */
-    public function getProtocol()
-    {
-        return $this->protocol;
-    }
-
-    /**
-     * @param AbstractProtocol $protocol
-     */
-    public function setProtocol($protocol)
-    {
-        $this->protocol = $protocol;
-    }
 }

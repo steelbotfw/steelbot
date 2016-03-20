@@ -5,7 +5,6 @@ namespace Steelbot\Context;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
-use Steelbot\ClientInterface;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Route\CallableRouteMatcher;
 use Steelbot\Route\PcreRouteMatcher;
@@ -83,7 +82,7 @@ class ContextProvider implements LoggerAwareInterface
                         'file' => $handler
                     ]);
 
-                    return require $handler;
+                    return $this->createContextFromFile($handler);
                 } else {
                     throw new \UnexpectedValueException("Error resolving context: $handler");
                 }
@@ -91,5 +90,15 @@ class ContextProvider implements LoggerAwareInterface
         }
 
         return false;
+    }
+
+    /**
+     * @param string $filename
+     *
+     * @return \Closure
+     */
+    protected function createContextFromFile(string $filename)
+    {
+        return require $filename;
     }
 }
