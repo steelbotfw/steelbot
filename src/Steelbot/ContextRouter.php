@@ -4,7 +4,9 @@ namespace Steelbot;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Steelbot\Context\{ContextInterface, ContextProvider};
+use Steelbot\Context\{
+    ContextInterface, ContextProviderInterface
+};
 use Steelbot\Exception\ContextNotFoundException;
 use Steelbot\Protocol\AbstractProtocol;
 use Steelbot\Protocol\IncomingPayloadInterface;
@@ -34,7 +36,7 @@ class ContextRouter implements LoggerAwareInterface
      *
      * @return ContextRouter
      */
-    public function addContextProvider(ContextProvider $contextProvider): self
+    public function addContextProvider(ContextProviderInterface $contextProvider): self
     {
         $this->contextProviders[] = $contextProvider;
 
@@ -42,7 +44,7 @@ class ContextRouter implements LoggerAwareInterface
     }
 
     /**
-     * @return array
+     * @return ContextProviderInterface[]
      */
     public function getContextProviders(): array
     {
@@ -106,7 +108,8 @@ class ContextRouter implements LoggerAwareInterface
         foreach ($this->contextProviders as $contextProvider) {
             $this->logger->debug("Checking provider", ['class' => get_class($contextProvider)]);
 
-            if ($context = $contextProvider->findContext($payload)) {
+            $context = $contextProvider->findContext($payload);
+            if ($context !== false) {
                 return $context;
             }
         }

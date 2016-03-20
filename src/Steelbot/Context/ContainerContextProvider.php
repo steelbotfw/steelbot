@@ -9,14 +9,17 @@ use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Route\CallableRouteMatcher;
 use Steelbot\Route\PcreRouteMatcher;
 use Steelbot\Route\RouteMatcherInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
 /**
- * Class ContextProvider
+ * Class ContainerContextProvider
  * @package Steelbot\Context
  */
-class ContextProvider implements LoggerAwareInterface, ContextProviderInterface
+class ContainerContextProvider implements LoggerAwareInterface, ContainerAwareInterface, ContextProviderInterface
 {
     use LoggerAwareTrait;
+    use ContainerAwareTrait;
 
     /**
      * @var LoggerInterface
@@ -30,19 +33,19 @@ class ContextProvider implements LoggerAwareInterface, ContextProviderInterface
 
     /**
      * @param RouteMatcherInterface|string $regexp
-     * @param string|callable $handler
+     * @param string $handler
      */
-    public function addRoute($matcher, $handler): self
+    public function setRoute($matcher, string $serviceId): self
     {
         if (is_string($matcher)) {
             $matcher = new PcreRouteMatcher($matcher);
         } elseif (is_callable($matcher)) {
             $matcher = new CallableRouteMatcher($matcher);
         } elseif (!($matcher instanceof RouteMatcherInterface)) {
-            throw new \DomainException("Matcher must implement RouteMatcherInterface or be a string");
+            throw new \DomainException("Matcher must implement RouteMatcherInterface or to be a string");
         }
 
-        $this->routes[] = [$matcher, $handler];
+        $this->routes[$serviceId] = $matcher;
 
         return $this;
     }
@@ -64,40 +67,14 @@ class ContextProvider implements LoggerAwareInterface, ContextProviderInterface
      */
     public function findContext(IncomingPayloadInterface $payload)
     {
-        foreach ($this->routes as list($routeMatcher, $handler)) {
+        foreach ($this->routes as $serviceId => $routeMatcher) {
             $this->logger->debug("Checking route", ['class' => get_class($routeMatcher)]);
 
             if ($routeMatcher->match($payload)) {
-                if (is_callable($handler)) {
-                    $this->logger->debug("Returning callable handler");
-
-                    return $handler;
-                } elseif (class_exists($handler, true)) {
-                    $this->logger->debug("Returning class handler");
-
-                    return new $handler;
-                } elseif (file_exists($handler)) {
-                    $this->logger->debug("Returning anonymous class or closure", [
-                        'file' => $handler
-                    ]);
-
-                    return $this->createContextFromFile($handler);
-                } else {
-                    throw new \UnexpectedValueException("Error resolving context: $handler");
-                }
+                return $this->container->get($serviceId);
             }
         }
 
         return false;
-    }
-
-    /**
-     * @param string $filename
-     *
-     * @return \Closure
-     */
-    protected function createContextFromFile(string $filename)
-    {
-        return require $filename;
     }
 }

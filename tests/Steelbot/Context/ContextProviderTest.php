@@ -33,7 +33,7 @@ namespace Steelbot\Tests\Context {
      */
     class ContextProviderTest extends \PHPUnit_Framework_TestCase
     {
-        public function testSetRouteStringMatcher()
+        public function testAddRouteStringMatcher()
         {
             $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
             $this->assertCount(0, $contextProvider->getRoutes());
@@ -42,12 +42,12 @@ namespace Steelbot\Tests\Context {
             $handler = function () {
                 return true;
             };
-            $contextProvider->setRoute($matcher, $handler);
+            $contextProvider->addRoute($matcher, $handler);
 
             $this->assertCount(1, $contextProvider->getRoutes());
         }
 
-        public function testSetRouteCallableMatcher()
+        public function testAddRouteCallableMatcher()
         {
             $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
             $this->assertCount(0, $contextProvider->getRoutes());
@@ -60,7 +60,7 @@ namespace Steelbot\Tests\Context {
                 'a' => 'Help text'
             ];
 
-            $contextProvider->setRoute($matcher, $handler, $help);
+            $contextProvider->addRoute($matcher, $handler, $help);
 
             $this->assertCount(1, $contextProvider->getRoutes());
         }
@@ -77,8 +77,8 @@ namespace Steelbot\Tests\Context {
 
             $matcher2 = new PcreRouteMatcher('~b~');
 
-            $contextProvider->setRoute($matcher, $handler);
-            $contextProvider->setRoute($matcher2, $handler);
+            $contextProvider->addRoute($matcher, $handler);
+            $contextProvider->addRoute($matcher2, $handler);
 
             $getRoutes = $contextProvider->getRoutes();
             $this->assertCount(2, $getRoutes);
@@ -116,7 +116,7 @@ namespace Steelbot\Tests\Context {
             $help = [
                 'a' => 'Help text'
             ];
-            $contextProvider->setRoute($matcher, $handler, $help);
+            $contextProvider->addRoute($matcher, $handler, $help);
 
             $foundHandler = $contextProvider->findContext($payload);
 
@@ -139,7 +139,7 @@ namespace Steelbot\Tests\Context {
             $help = [
                 'a' => 'Help text'
             ];
-            $contextProvider->setRoute($matcher, get_class($handler), $help);
+            $contextProvider->addRoute($matcher, get_class($handler), $help);
 
             $foundHandler = $contextProvider->findContext($payload);
             $this->assertInstanceOf(AbstractContext::class, $foundHandler);
@@ -169,7 +169,7 @@ namespace Steelbot\Tests\Context {
             $help = [
                 'a' => 'Help text'
             ];
-            $contextProvider->setRoute($matcher, $handlerFilename, $help);
+            $contextProvider->addRoute($matcher, $handlerFilename, $help);
 
             $foundHandler = $contextProvider->findContext($payload, $user);
             $this->assertSame($handler, $foundHandler);
@@ -192,7 +192,7 @@ namespace Steelbot\Tests\Context {
             $matcher = new PcreRouteMatcher('~a~');
             $handler = 'somethingUnexistent';
 
-            $contextProvider->setRoute($matcher, $handler);
+            $contextProvider->addRoute($matcher, $handler);
 
             $this->setExpectedException(\UnexpectedValueException::class);
             $foundHandler = $contextProvider->findContext($payload, $user);
