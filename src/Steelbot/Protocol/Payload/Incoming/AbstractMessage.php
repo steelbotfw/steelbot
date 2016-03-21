@@ -54,7 +54,7 @@ abstract class AbstractMessage implements IncomingPayloadInterface
      */
     public function isGroupChatMessage()
     {
-        if ($this->from->getId() != $this->user->getId() instanceof GroupChatInterface) {
+        if ($this->from->getId() != $this->user->getId()) {
             return true;
         } else {
             return false;
