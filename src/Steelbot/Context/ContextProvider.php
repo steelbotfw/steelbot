@@ -4,7 +4,6 @@ namespace Steelbot\Context;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
 use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Route\CallableRouteMatcher;
 use Steelbot\Route\PcreRouteMatcher;
@@ -17,11 +16,6 @@ use Steelbot\Route\RouteMatcherInterface;
 class ContextProvider implements LoggerAwareInterface, ContextProviderInterface
 {
     use LoggerAwareTrait;
-
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
 
     /**
      * @var array
