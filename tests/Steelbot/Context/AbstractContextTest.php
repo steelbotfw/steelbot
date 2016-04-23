@@ -4,6 +4,7 @@ namespace Steelbot\Tests\Context;
 
 use Steelbot\Context\AbstractContext;
 use Steelbot\Protocol\AbstractProtocol;
+use Steelbot\ClientInterface;
 
 class AbstractContextTest extends \PHPUnit_Framework_TestCase
 {
@@ -14,11 +15,15 @@ class AbstractContextTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $client = $this->getMock('Steelbot\ClientInterface');
-        $eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+        $client = $this->getMock(ClientInterface::class);
+        $eventDispatcher = $this->getMock(\Symfony\Component\EventDispatcher\EventDispatcherInterface::class);
         $protocol = $this->getMockForAbstractClass(AbstractProtocol::class, [$eventDispatcher]);
 
-        $this->context = $this->getMockForAbstractClass(AbstractContext::class, [$protocol, $client]);
+        $context = $this->getMock(AbstractContext::class);
+        $context->setClient($client);
+        $context->setProtocol($protocol);
+
+        $this->context = $context;
     }
 
     public function testIsResolved()

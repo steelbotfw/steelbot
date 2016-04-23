@@ -12,6 +12,7 @@ use Steelbot\Event\BeforeStopEvent;
 use Steelbot\Protocol\Event\IncomingPayloadEvent;
 use Steelbot\Exception\ContextNotFoundException;
 use Steelbot\Protocol\Exception\UnknownPayloadException;
+use Steelbot\Protocol\IncomingPayloadInterface;
 use Steelbot\Protocol\Payload\Incoming\AbstractMessage;
 use Steelbot\Protocol\Payload\Outgoing\TextMessage;
 use Symfony\Component\Config\Loader\LoaderInterface;
@@ -52,10 +53,10 @@ class Application extends Kernel
                     'content' => (string)$payload
                 ]);
 
-                $callback = function ($payload): \Generator 
+                $callback = function (AbstractMessage $payload): \Generator
                 {
                     try {
-                        yield from $this->getContextRouter()->handle($payload);
+                        yield from $this->getContextRouter()->handle($payload, $this->getProtocol());
                     } catch (ContextNotFoundException $e) {
                         $this->getLogger()->debug("Handle not found");
 
