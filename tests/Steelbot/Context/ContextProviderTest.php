@@ -18,14 +18,12 @@ namespace Steelbot\Context {
 
 namespace Steelbot\Tests\Context {
 
-    use Steelbot\Application;
-    use Steelbot\Context\ContextProvider;
-    use Steelbot\Context\AbstractContext;
-    use Steelbot\Protocol\AbstractProtocol;
-    use Steelbot\Protocol\Payload\Incoming\TextMessage;
-    use Steelbot\Route\PcreRouteMatcher;
-    use Symfony\Component\DependencyInjection\ContainerInterface;
-
+    use Steelbot\{
+        Context\ContextProvider,
+        Context\AbstractContext,
+        Protocol\Payload\Incoming\TextMessage,
+        Route\PcreRouteMatcher
+    };
 
     /**
      * Class ContextProviderTest
@@ -35,7 +33,7 @@ namespace Steelbot\Tests\Context {
     {
         public function testAddRouteStringMatcher()
         {
-            $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
+            $contextProvider = new ContextProvider();
             $this->assertCount(0, $contextProvider->getRoutes());
 
             $matcher = '~a~';
@@ -49,25 +47,22 @@ namespace Steelbot\Tests\Context {
 
         public function testAddRouteCallableMatcher()
         {
-            $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
+            $contextProvider = new ContextProvider();
             $this->assertCount(0, $contextProvider->getRoutes());
 
             $matcher = new PcreRouteMatcher('~a~');
             $handler = function () {
                 return true;
             };
-            $help = [
-                'a' => 'Help text'
-            ];
 
-            $contextProvider->addRoute($matcher, $handler, $help);
+            $contextProvider->addRoute($matcher, $handler);
 
             $this->assertCount(1, $contextProvider->getRoutes());
         }
 
         public function testGetRoutes()
         {
-            $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
+            $contextProvider = new ContextProvider();
             $this->assertCount(0, $contextProvider->getRoutes());
 
             $matcher = new PcreRouteMatcher('~a~');
@@ -87,16 +82,11 @@ namespace Steelbot\Tests\Context {
 
         public function testFindContextNotFound()
         {
-            $environment = 'test';
-            $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
-            $logger = $this->getMock(\Psr\Log\LoggerInterface::class);
-            $contextProvider->setLogger($logger);
+            $contextProvider = new ContextProvider();
 
-            $payload = $this->getMock('Steelbot\Protocol\IncomingPayloadInterface');
-            $client = $this->getMock('Steelbot\ClientInterface');
-            $app = new Application($environment, true);
+            $payload = $this->getMock(\Steelbot\Protocol\IncomingPayloadInterface::class);
 
-            $this->assertFalse($contextProvider->findContext($payload, $client, $app));
+            $this->assertFalse($contextProvider->findContext($payload));
         }
 
         public function testFindContextCallableFound()
@@ -113,10 +103,7 @@ namespace Steelbot\Tests\Context {
             $handler = function () {
                 return true;
             };
-            $help = [
-                'a' => 'Help text'
-            ];
-            $contextProvider->addRoute($matcher, $handler, $help);
+            $contextProvider->addRoute($matcher, $handler);
 
             $foundHandler = $contextProvider->findContext($payload);
 
@@ -136,10 +123,7 @@ namespace Steelbot\Tests\Context {
             $matcher = new PcreRouteMatcher('~a~');
 
             $handler = $this->getMockForAbstractClass(AbstractContext::class);
-            $help = [
-                'a' => 'Help text'
-            ];
-            $contextProvider->addRoute($matcher, get_class($handler), $help);
+            $contextProvider->addRoute($matcher, get_class($handler));
 
             $foundHandler = $contextProvider->findContext($payload);
             $this->assertInstanceOf(AbstractContext::class, $foundHandler);
@@ -180,7 +164,7 @@ namespace Steelbot\Tests\Context {
             global $mockFileExists;
             $mockFileExists = false;
 
-            $contextProvider = new ContextProvider($this->getMock(ContainerInterface::class));
+            $contextProvider = new ContextProvider();
 
             $logger = $this->getMock(\Psr\Log\LoggerInterface::class);
             $contextProvider->setLogger($logger);
