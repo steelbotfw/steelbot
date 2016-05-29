@@ -18,6 +18,7 @@ namespace Steelbot\Context {
 
 namespace Steelbot\Tests\Context {
 
+    use Psr\Log\LoggerInterface;
     use Steelbot\{
         Context\ContextProvider,
         Context\AbstractContext,
@@ -84,7 +85,7 @@ namespace Steelbot\Tests\Context {
         {
             $contextProvider = new ContextProvider();
 
-            $payload = $this->getMock(\Steelbot\Protocol\IncomingPayloadInterface::class);
+            $payload = $this->createMock(\Steelbot\Protocol\IncomingPayloadInterface::class);
 
             $this->assertFalse($contextProvider->findContext($payload));
         }
@@ -92,11 +93,11 @@ namespace Steelbot\Tests\Context {
         public function testFindContextCallableFound()
         {
             $contextProvider = new ContextProvider();
-            $logger = $this->getMock(\Psr\Log\LoggerInterface::class);
+            $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
             $contextProvider->setLogger($logger);
 
             /** @var \Steelbot\ClientInterface $user */
-            $user = $this->getMock(\Steelbot\UserInterface::class);
+            $user = $this->createMock(\Steelbot\UserInterface::class);
             $payload = new TextMessage('a', $user, $user);
 
             $matcher = new PcreRouteMatcher('~a~');
@@ -113,11 +114,11 @@ namespace Steelbot\Tests\Context {
         public function testFindContextClassFound()
         {
             $contextProvider = new ContextProvider();
-            $logger = $this->getMock(\Psr\Log\LoggerInterface::class);
+            $logger = $this->createMock(LoggerInterface::class);
             $contextProvider->setLogger($logger);
 
             /** @var \Steelbot\UserInterface $user */
-            $user = $this->getMock(\Steelbot\UserInterface::class);
+            $user = $this->createMock(\Steelbot\UserInterface::class);
             $payload = new TextMessage('a', $user, $user);
 
             $matcher = new PcreRouteMatcher('~a~');
@@ -135,17 +136,19 @@ namespace Steelbot\Tests\Context {
                 return true;
             };
 
+            /** @var ContextProvider|\PHPUnit_Framework_MockObject_MockObject $contextProvider */
             $contextProvider = $this->getMockBuilder(ContextProvider::class)
                 ->setMethods(['createContextFromFile'])
                 ->getMock();
             $contextProvider->method('createContextFromFile')
                 ->willReturn($handler);
 
-            $logger = $this->getMock(\Psr\Log\LoggerInterface::class);
+            /** @var LoggerInterface $logger */
+            $logger = $this->createMock(LoggerInterface::class);
             $contextProvider->setLogger($logger);
 
             /** @var \Steelbot\UserInterface $user */
-            $user = $this->getMock(\Steelbot\UserInterface::class);
+            $user = $this->createMock(\Steelbot\UserInterface::class);
             $payload = new TextMessage('a', $user, $user);
 
             $matcher = new PcreRouteMatcher('~a~');
@@ -166,11 +169,11 @@ namespace Steelbot\Tests\Context {
 
             $contextProvider = new ContextProvider();
 
-            $logger = $this->getMock(\Psr\Log\LoggerInterface::class);
+            $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
             $contextProvider->setLogger($logger);
 
             /** @var \Steelbot\UserInterface $user */
-            $user = $this->getMock(\Steelbot\UserInterface::class);
+            $user = $this->createMock(\Steelbot\UserInterface::class);
             $payload = new TextMessage('a', $user, $user);
 
             $matcher = new PcreRouteMatcher('~a~');
@@ -178,7 +181,7 @@ namespace Steelbot\Tests\Context {
 
             $contextProvider->addRoute($matcher, $handler);
 
-            $this->setExpectedException(\UnexpectedValueException::class);
+            $this->expectException(\UnexpectedValueException::class);
             $foundHandler = $contextProvider->findContext($payload, $user);
             $this->assertSame($handler, $foundHandler);
         }

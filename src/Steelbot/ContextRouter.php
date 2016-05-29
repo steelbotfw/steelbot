@@ -63,22 +63,7 @@ class ContextRouter implements LoggerAwareInterface
 
         $this->logger->debug("New payload", ['clientId' => $clientId]);
 
-        if (isset($this->clientContexts[$clientId])) {
-            $context = $this->clientContexts[$clientId];
-        } else {
-            $context = $this->findContext($message);
-            $context->setClient($client);
-            $context->setProtocol($protocol);
-
-            if ($context instanceof LoggerAwareInterface) {
-                $context->setLogger($this->logger);
-            }
-            $this->logger->debug("Assigning context", [
-                'class' => get_class($context),
-                'clientId' => $clientId
-            ]);
-            $this->clientContexts[$clientId] = $context;
-        }
+        $context = $this->clientContexts[$clientId] ?? $this->buildContext($message, $protocol);
 
         if (is_callable($context))  {
             yield $context($message, $client);
@@ -94,6 +79,32 @@ class ContextRouter implements LoggerAwareInterface
         }
 
         return true;
+    }
+
+    /**
+     * @param AbstractMessage  $message
+     * @param AbstractProtocol $protocol
+     *
+     * @return ContextInterface
+     * @throws ContextNotFoundException
+     */
+    protected function buildContext(AbstractMessage $message, AbstractProtocol $protocol): ContextInterface
+    {
+        $context = $this->findContext($message);
+        $context->setClient($message->getFrom());
+        $context->setProtocol($protocol);
+
+        if ($context instanceof LoggerAwareInterface) {
+            $context->setLogger($this->logger);
+        }
+        $this->logger->debug("Assigning context", [
+            'class' => get_class($context),
+            'clientId' => $message->getFrom()->getId()
+        ]);
+
+        $this->clientContexts[$message->getFrom()->getId()] = $context;
+
+        return $context;
     }
 
     /**
