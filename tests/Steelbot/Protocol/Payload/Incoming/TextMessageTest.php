@@ -2,13 +2,16 @@
 
 namespace Steelbot\Tests\Protocol\Payload\Incoming;
 
-use Steelbot\Protocol\Payload\Incoming\TextMessage;
+use Steelbot\{
+    ClientInterface, Protocol\Payload\Incoming\TextMessage, UserInterface
+};
 
 class TextMessageTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetText()
     {
-        $user = $this->getMock(\Steelbot\UserInterface::class);
+        /** @var ClientInterface $user */
+        $user = $this->createMock(UserInterface::class);
         $payload = new TextMessage('incoming text', $user, $user);
 
         $this->assertEquals('incoming text', $payload->getText());
@@ -16,7 +19,8 @@ class TextMessageTest extends \PHPUnit_Framework_TestCase
 
     public function testToString()
     {
-        $user = $this->getMock(\Steelbot\UserInterface::class);
+        /** @var ClientInterface $user */
+        $user = $this->createMock(UserInterface::class);
         $payload = new TextMessage('incoming text', $user, $user);
 
         $this->assertEquals('incoming text', (string)$payload);

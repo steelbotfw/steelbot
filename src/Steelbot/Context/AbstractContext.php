@@ -60,7 +60,7 @@ abstract class AbstractContext implements ContextInterface
         if (!$this->client) {
             $this->client = $client;
         } else {
-            throw new LogicException("Client already has been setted");
+            throw new LogicException("Client already has been set");
         }
 
         return $this;
@@ -84,10 +84,14 @@ abstract class AbstractContext implements ContextInterface
 
     /**
      * Resolve current context
+     *
+     * @return $this
      */
-    protected function resolve()
+    protected function resolve(): self
     {
         $this->isResolved = true;
+
+        return $this;
     }
 
     /**
