@@ -13,7 +13,7 @@ class Client implements ClientInterface
 
     public function __construct($id)
     {
-        $this->id = $id;
+        $this->id = trim($id);
     }
 
     /**
