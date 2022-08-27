@@ -15,3 +15,10 @@ services:
     calls:
       - [setLogger, ['@logger']]
 
+  protocol:
+    class: Steelbot\Protocol\Irc\Protocol
+    arguments: ['@event_dispatcher']
+    calls:
+      - [setLogger, ['@logger']]
+      - [setServer, ['127.0.0.1']]
+
